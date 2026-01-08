@@ -16,6 +16,7 @@ venv/
 .env
 instance/
 .secret
+ccnm.txt
 
 # Base de données
 database/database.db

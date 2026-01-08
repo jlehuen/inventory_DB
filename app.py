@@ -220,7 +220,7 @@ def init_auth_db():
     app.logger.info('Tables d\'authentification initialisées')
 
 def create_admin_user():
-    """Crée un utilisateur administrateur s'il n'existe pas déjà"""
+    """Crée un utilisateur administrateur s'il n'existe pas déjà ou met à jour son mot de passe"""
     admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
     admin_password = os.environ.get('ADMIN_PASSWORD', 'password')
 
@@ -229,16 +229,24 @@ def create_admin_user():
     admin = conn.execute('SELECT id FROM users WHERE username = ?',
                         (admin_username,)).fetchone()
 
+    password_hash = generate_password_hash(admin_password)
+
     if not admin:
         # Créer l'administrateur
-        password_hash = generate_password_hash(admin_password)
         conn.execute(
             'INSERT INTO users (username, password_hash) VALUES (?, ?)',
             (admin_username, password_hash)
         )
-        conn.commit()
         app.logger.info(f'Utilisateur administrateur "{admin_username}" créé')
+    else:
+        # Mettre à jour le mot de passe de l'administrateur existant
+        conn.execute(
+            'UPDATE users SET password_hash = ? WHERE username = ?',
+            (password_hash, admin_username)
+        )
+        app.logger.info(f'Mot de passe de l\'administrateur "{admin_username}" mis à jour via .env')
 
+    conn.commit()
     conn.close()
 
 def log_auth_attempt(user_id, action, request):
