@@ -43,16 +43,22 @@
             <input type="text" id="date_fabrication" name="date_fabrication" value="{{ objet.date_fabrication or '' }}">
         </div>
 
-        <div class="form-group">
-            <label for="donnees_complementaires">Informations</label>
-            <input type="url" id="donnees_complementaires" name="donnees_complementaires" value="{{ objet.url or '' }}" placeholder="https://...">
-            <small>Entrez une URL complète (ex: https://exemple.com)</small>
+        <div class="form-group liens-supplementaires">
+            <label>Informations (URL)</label>
+            <div class="liens-upload-container" id="liens-container">
+                <div class="lien-upload-item" style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
+                    <input type="url" name="liens" placeholder="https://..." style="flex-grow: 1;">
+                    <!-- On ne met pas de bouton supprimer sur le premier champ obligatoire -->
+                </div>
+            </div>
+            <button type="button" class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="ajouterChampLien()">+ Ajouter un lien</button>
+            <br><small>Entrez des URL complètes (ex: https://exemple.com)</small>
         </div>
 
         <div class="form-group">
             <label for="numero_inventaire">Numéro d'inventaire *</label>
-            <input type="text" id="numero_inventaire" name="numero_inventaire" value="{{ objet.numero_inventaire or '' }}" required>
-            <small>Ce numéro doit être unique pour chaque objet</small>
+            <input type="text" id="numero_inventaire" name="numero_inventaire" value="{{ objet.numero_inventaire or '' }}" required readonly class="readonly-input">
+            <small>Ce numéro est généré automatiquement et ne peut pas être modifié</small>
         </div>
 
         <div class="form-group">
@@ -275,6 +281,26 @@
     }
 
     function supprimerChampImage(button) {
+        const item = button.parentElement;
+        item.remove();
+    }
+
+    // Gestion des liens dynamiques
+    function ajouterChampLien() {
+        const container = document.getElementById('liens-container');
+        const newItem = document.createElement('div');
+        newItem.className = 'lien-upload-item';
+        newItem.style.cssText = "display: flex; gap: 10px; margin-bottom: 10px; align-items: center;";
+
+        newItem.innerHTML = `
+            <input type="url" name="liens" placeholder="https://..." style="flex-grow: 1;">
+            <button type="button" class="btn-small danger" onclick="supprimerChampLien(this)">-</button>
+        `;
+
+        container.appendChild(newItem);
+    }
+
+    function supprimerChampLien(button) {
         const item = button.parentElement;
         item.remove();
     }

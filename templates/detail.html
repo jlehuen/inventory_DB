@@ -3,6 +3,8 @@
 
 {% block title %}{{ objet['nom'] }} - Catalogue d'Instruments{% endblock %}
 
+{% block main_class %}wide-container{% endblock %}
+
 {% block content %}
 <section class="objet-detail">
     <div class="objet-detail-header">
@@ -67,11 +69,26 @@
                     <tr>
                         <th>Informations :</th>
                         <td>
-                            {% if objet['url'] %}
-                            <a href="{{ objet['url'] }}" target="_blank" class="url-link">
-                                {{ objet['url'] }}
-                                <i class="fas fa-external-link-alt"></i>
-                            </a>
+                            {% if liens %}
+                                <ul style="list-style-type: disc; padding-left: 1.2rem; margin: 0;">
+                                {% for lien in liens %}
+                                    <li style="margin-bottom: 5px;">
+                                        <a href="{{ lien.url }}" target="_blank" class="url-link">
+                                            {{ lien.url }}
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            {% elif objet['url'] %}
+                                <ul style="list-style-type: disc; padding-left: 1.2rem; margin: 0;">
+                                    <li>
+                                        <a href="{{ objet['url'] }}" target="_blank" class="url-link">
+                                            {{ objet['url'] }}
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    </li>
+                                </ul>
                             {% else %}
                             -
                             {% endif %}

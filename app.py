@@ -5,6 +5,7 @@ import json
 import uuid
 import sqlite3
 import logging
+import re
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from PIL import Image
@@ -271,6 +272,36 @@ def update_db_schema():
             app.logger.info("Ajout de la colonne date_modification")
             conn.execute('ALTER TABLE objets ADD COLUMN date_modification TEXT DEFAULT NULL')
 
+        # Création de la table liens si elle n'existe pas
+        conn.execute('''
+        CREATE TABLE IF NOT EXISTS liens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            objet_id INTEGER NOT NULL,
+            url TEXT NOT NULL,
+            titre TEXT,
+            ordre INTEGER DEFAULT 0,
+            FOREIGN KEY (objet_id) REFERENCES objets (id) ON DELETE CASCADE
+        )
+        ''')
+
+        # Migration des anciennes URLs vers la table liens
+        if 'url' in columns:
+            app.logger.info("Migration des URLs vers la table liens...")
+            # Récupérer les objets avec une URL non vide
+            objets_avec_url = conn.execute("SELECT id, url FROM objets WHERE url IS NOT NULL AND url != ''").fetchall()
+            
+            migrated_count = 0
+            for obj in objets_avec_url:
+                # Vérifier si ce lien existe déjà pour éviter les doublons lors de redémarrages multiples
+                exists = conn.execute("SELECT COUNT(*) FROM liens WHERE objet_id = ? AND url = ?", (obj['id'], obj['url'])).fetchone()[0]
+                if not exists:
+                    conn.execute("INSERT INTO liens (objet_id, url, ordre) VALUES (?, ?, 0)", (obj['id'], obj['url']))
+                    migrated_count += 1
+            
+            if migrated_count > 0:
+                app.logger.info(f"{migrated_count} URLs migrées vers la table liens.")
+                # Optionnel : On pourrait vider la colonne url ici, mais on la garde par sécurité pour l'instant
+
         conn.commit()
         app.logger.info("Schéma de base de données mis à jour avec succès!")
     except Exception as e:
@@ -332,6 +363,31 @@ def save_uploaded_file(file):
 
         return 'database/uploads/' + filename
     return None
+
+def generer_numero_inventaire(db_connection):
+    """
+    Génère le prochain numéro d'inventaire disponible au format INV_IC2_xxxx.
+    Cherche le premier nombre disponible en partant de 0.
+    """
+    conn = db_connection()
+    rows = conn.execute('SELECT numero_inventaire FROM objets').fetchall()
+    conn.close()
+
+    existing_numbers = set()
+    pattern = re.compile(r'^INV_IC2_(\d{4})$')
+
+    for row in rows:
+        inv_num = row['numero_inventaire']
+        if inv_num:
+            match = pattern.match(inv_num)
+            if match:
+                existing_numbers.add(int(match.group(1)))
+
+    next_num = 0
+    while next_num in existing_numbers:
+        next_num += 1
+
+    return f'INV_IC2_{next_num:04d}'
 
 def numero_inventaire_existe(numero, exclude_id=None):
     """
@@ -456,8 +512,14 @@ def detail_objet(id):
         (id,)
     ).fetchall()
 
+    # Récupérer tous les liens associés à cet objet
+    liens = conn.execute(
+        'SELECT * FROM liens WHERE objet_id = ? ORDER BY ordre',
+        (id,)
+    ).fetchall()
+
     conn.close()
-    return render_template('detail.html', objet=objet, images=images)
+    return render_template('detail.html', objet=objet, images=images, liens=liens)
 
 @app.route('/recherche')
 def recherche():
@@ -472,12 +534,22 @@ def recherche():
         'SELECT * FROM objets WHERE nom LIKE ? OR description LIKE ? OR fabricant LIKE ? OR numero_inventaire LIKE ? OR date_fabrication LIKE ? OR etat LIKE ?',
         (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%')
     ).fetchall()
+    
+    # Recherche dans les liens (nouvelle table)
+    objets_liens = conn.execute(
+        'SELECT DISTINCT o.* FROM objets o JOIN liens l ON o.id = l.objet_id WHERE l.url LIKE ? OR l.titre LIKE ?',
+        (f'%{query}%', f'%{query}%')
+    ).fetchall()
 
     # Deuxième étape : recherche dans tous les objets pour vérifier les attributs spécifiques
     all_objets = conn.execute('SELECT * FROM objets').fetchall()
 
     # Convertir les objets en dictionnaires pour faciliter la manipulation
+    # On combine les résultats standard et ceux des liens
     objets_standard_dict = {obj['id']: dict(obj) for obj in objets_standard}
+    
+    for obj in objets_liens:
+        objets_standard_dict[obj['id']] = dict(obj)
 
     # Parcourir tous les objets et vérifier les attributs spécifiques
     for obj in all_objets:
@@ -608,7 +680,7 @@ def ajouter_objet():
 
         fabricant = request.form['fabricant']
         date_fabrication = request.form['date_fabrication']
-        url = request.form['donnees_complementaires']
+        # url = request.form['donnees_complementaires']  <-- Ancienne gestion
         numero_inventaire = request.form['numero_inventaire']
 
         # Collecte des attributs spécifiques
@@ -652,7 +724,7 @@ def ajouter_objet():
                                       'categorie': categorie,
                                       'fabricant': fabricant,
                                       'date_fabrication': date_fabrication,
-                                      'url': url,
+                                      # 'url': url,  <-- Plus utilisé
                                       'numero_inventaire': numero_inventaire,
                                       'attributs_specifiques': attributs_json
                                   })
@@ -667,13 +739,22 @@ def ajouter_objet():
                 if image_path:
                     image_principale_path = image_path
 
-            # Insérer les informations de l'objet
+            # Insérer les informations de l'objet (sans l'URL dans la table principale)
             cursor = conn.execute(
-                'INSERT INTO objets (nom, description, categorie, fabricant, date_fabrication, url, numero_inventaire, image_principale, date_ajout, attributs_specifiques) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                (nom, description, categorie, fabricant, date_fabrication, url, numero_inventaire, image_principale_path, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), attributs_json)
+                'INSERT INTO objets (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale, date_ajout, attributs_specifiques) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), attributs_json)
             )
 
             objet_id = cursor.lastrowid
+            
+            # Traitement des liens (Informations)
+            liens = request.form.getlist('liens')
+            for i, lien in enumerate(liens):
+                if lien.strip():
+                    conn.execute(
+                        'INSERT INTO liens (objet_id, url, ordre) VALUES (?, ?, ?)',
+                        (objet_id, lien.strip(), i)
+                    )
 
             # Traitement des images supplémentaires
             if 'images_supplementaires' in request.files:
@@ -694,7 +775,9 @@ def ajouter_objet():
             flash('Objet ajouté avec succès !', 'success')
             return redirect(url_for('admin'))
 
-    return render_template('admin/ajouter.html', objet={})
+    # Générer le prochain numéro d'inventaire disponible pour le formulaire vide
+    prochain_numero = generer_numero_inventaire(get_db_connection)
+    return render_template('admin/ajouter.html', objet={'numero_inventaire': prochain_numero})
 
 @app.route('/admin/modifier/<int:id>', methods=('GET', 'POST'))
 @login_required
@@ -707,6 +790,9 @@ def modifier_objet(id):
 
     # Récupérer les images existantes
     images = conn.execute('SELECT * FROM images WHERE objet_id = ? ORDER BY ordre', (id,)).fetchall()
+    
+    # Récupérer les liens existants
+    liens = conn.execute('SELECT * FROM liens WHERE objet_id = ? ORDER BY ordre', (id,)).fetchall()
 
     if request.method == 'POST':
         nom = request.form['nom']
@@ -720,7 +806,7 @@ def modifier_objet(id):
 
         fabricant = request.form['fabricant']
         date_fabrication = request.form['date_fabrication']
-        url = request.form['donnees_complementaires']
+        # url = request.form['donnees_complementaires'] <-- Ancienne gestion
         numero_inventaire = request.form['numero_inventaire']
         etat = request.form.get('etat', '')  # Récupération de l'état de l'objet
 
@@ -757,6 +843,7 @@ def modifier_objet(id):
             flash(error, 'error')
             # Récupérer à nouveau les images pour le formulaire
             images = conn.execute('SELECT * FROM images WHERE objet_id = ? ORDER BY ordre', (id,)).fetchall()
+            liens = conn.execute('SELECT * FROM liens WHERE objet_id = ? ORDER BY ordre', (id,)).fetchall()
             conn.close()
 
             # Renvoyer le formulaire avec les données modifiées
@@ -767,13 +854,13 @@ def modifier_objet(id):
                 'categorie': categorie,
                 'fabricant': fabricant,
                 'date_fabrication': date_fabrication,
-                'url': url,
+                # 'url': url,
                 'numero_inventaire': numero_inventaire,
                 'etat': etat,  # Inclure l'état dans les données modifiées
                 'attributs_specifiques': attributs_json
             })
 
-            return render_template('admin/modifier.html', objet=modified_objet, images=images)
+            return render_template('admin/modifier.html', objet=modified_objet, images=images, liens=liens)
         else:
             # Gestion de l'image principale
             image_principale_path = objet['image_principale']
@@ -783,13 +870,24 @@ def modifier_objet(id):
                 if image_path:
                     image_principale_path = image_path
 
-            # Mettre à jour les informations de l'objet
+            # Mettre à jour les informations de l'objet (sans l'URL)
             current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             conn.execute(
-                'UPDATE objets SET nom = ?, description = ?, categorie = ?, fabricant = ?, date_fabrication = ?, url = ?, numero_inventaire = ?, image_principale = ?, attributs_specifiques = ?, etat = ?, date_modification = ? WHERE id = ?',
-                (nom, description, categorie, fabricant, date_fabrication, url, numero_inventaire, image_principale_path, attributs_json, etat, current_datetime, id)
+                'UPDATE objets SET nom = ?, description = ?, categorie = ?, fabricant = ?, date_fabrication = ?, numero_inventaire = ?, image_principale = ?, attributs_specifiques = ?, etat = ?, date_modification = ? WHERE id = ?',
+                (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, attributs_json, etat, current_datetime, id)
             )
+            
+            # Mise à jour des liens : on supprime tout et on recrée (plus simple)
+            conn.execute('DELETE FROM liens WHERE objet_id = ?', (id,))
+            
+            liens_form = request.form.getlist('liens')
+            for i, lien in enumerate(liens_form):
+                if lien.strip():
+                    conn.execute(
+                        'INSERT INTO liens (objet_id, url, ordre) VALUES (?, ?, ?)',
+                        (id, lien.strip(), i)
+                    )
 
             # Traitement des images à conserver
             images_to_keep = request.form.getlist('garder_image')
@@ -854,7 +952,7 @@ def modifier_objet(id):
             return redirect(url_for('admin'))
 
     conn.close()
-    return render_template('admin/modifier.html', objet=objet, images=images)
+    return render_template('admin/modifier.html', objet=objet, images=images, liens=liens)
 
 @app.route('/admin/supprimer/<int:id>', methods=('POST',))
 @login_required
@@ -923,11 +1021,17 @@ def generate_pdf(id):
         (id,)
     ).fetchall()
 
+    # Récupérer tous les liens associés à cet objet
+    liens = conn.execute(
+        'SELECT * FROM liens WHERE objet_id = ? ORDER BY ordre',
+        (id,)
+    ).fetchall()
+
     conn.close()
 
     # Générer le PDF
     base_url = request.url_root
-    pdf_buffer = pdf_generator.generate_object_pdf(objet, images, base_url)
+    pdf_buffer = pdf_generator.generate_object_pdf(objet, images, liens, base_url)
 
     # Renvoyer le PDF comme fichier téléchargeable
     return send_file(

@@ -1,141 +1,90 @@
-# PatstecClone - Catalogue du patrimoine scientifique et technique
+# Inventaire CCNM
 
-Ce projet est une application web permettant de cataloguer et de présenter des objets scientifiques et techniques, similaire au site [patstec.fr](https://www.patstec.fr).
+Ce projet est une application web permettant de cataloguer et de présenter la collection de micro-ordinateurs et de dispositifs numériques du **Centre Culturel sur le Numérique du Mans (CCNM)** et du **Musée Martial Vivet**.
+
+Il est similaire dans l'esprit au site [patstec.fr](https://www.patstec.fr).
 
 ## Fonctionnalités
 
-- Affichage d'objets scientifiques avec images et descriptions détaillées
-- Catégorisation des objets
-- Recherche d'objets par mot-clé
-- Interface d'administration pour ajouter, modifier et supprimer des objets
-- Base de données SQLite pour le stockage des données
+*   **Catalogue en ligne** : Affichage des objets avec images, descriptions détaillées, état, et liens d'informations multiples.
+*   **Recherche avancée** : Recherche par mot-clé incluant le nom, la description, le fabricant, le numéro d'inventaire, l'année, et même les attributs spécifiques.
+*   **Numéros d'inventaire automatiques** : Génération automatique de numéros uniques (ex: `INV_IC2_0001`).
+*   **Champs dynamiques** :
+    *   Attributs spécifiques selon la catégorie (définis dans `categories.json`).
+    *   Gestion de multiples liens d'informations (URL) pour chaque objet.
+    *   Galerie d'images avec gestion de l'ordre et des légendes.
+*   **Administration** : Interface sécurisée pour ajouter, modifier et supprimer des objets (nécessite une authentification).
+*   **Export PDF** : Génération automatique de fiches PDF pour chaque objet, incluant toutes les données et images.
+*   **Sécurité** : Protection contre les attaques par force brute sur la page de connexion.
+*   **Responsive Design** : Interface moderne adaptée aux mobiles et aux grands écrans (mode "wide" pour les détails).
 
 ## Prérequis
 
-- Python 3.7+
-- [Flask](https://perso.liris.cnrs.fr/pierre-antoine.champin/2019/progweb-python/cours/cm2.html)
-- Reportlab
+*   Python 3.7+
+*   Pip (gestionnaire de paquets Python)
 
-## Installation
+## Installation Rapide (Développement)
 
-1. Clonez le dépôt sur votre machine locale :
+1.  **Cloner le dépôt :**
+    ```bash
+    git clone https://github.com/jlehuen/inventory_DB.git
+    cd inventory_DB
+    ```
 
-```bash
-git clone https://github.com/lehuen/ccnm.git
-cd ccnm
+2.  **Créer un environnement virtuel :**
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate  # Sur Windows: venv\Scripts\activate
+    ```
+
+3.  **Installer les dépendances :**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+4.  **Configurer l'environnement :**
+    Copiez le fichier `.env.example` (s'il existe) ou créez un fichier `.env` à la racine :
+    ```ini
+    SECRET_KEY=votre_cle_secrete_tres_longue
+    ADMIN_USERNAME=admin
+    ADMIN_PASSWORD=votre_mot_de_passe
+    FLASK_ENV=development
+    ```
+
+5.  **Lancer l'application :**
+    ```bash
+    ./run.command  # Ou: python app.py
+    ```
+    Accédez à `http://127.0.0.1:5000`.
+
+## Structure du Projet
+
+```
+inventory_DB/
+├── app.py                 # Application Flask principale (routes, modèles)
+├── requirements.txt       # Liste des dépendances Python
+├── DEPLOY.md              # Guide de déploiement en production
+├── run.command            # Script de lancement rapide
+├── static/
+│   ├── css/               # Styles (modernui.css, style.css)
+│   ├── categories.json    # Configuration des attributs par catégorie
+│   └── schema.sql         # Schéma de la base de données
+├── templates/             # Templates HTML (Jinja2)
+│   ├── base.html          # Layout principal
+│   ├── admin/             # Templates d'administration
+│   └── ...
+├── scripts/               # Scripts utilitaires
+│   ├── pdf_generator.py   # Génération PDF
+│   ├── clean_images.py    # Nettoyage des images orphelines
+│   └── login_security.py  # Sécurité de l'authentification
+└── database/
+    └── uploads/           # Stockage des images uploadées
 ```
 
-2. Créez et activez un environnement virtuel Python :
+## Déploiement en Production
 
-```bash
-# Sous Windows
-python -m venv venv
-venv\Scripts\activate
-
-# Sous Linux/Mac
-python3 -m venv venv
-source venv/bin/activate
-```
-
-3. Installez les dépendances requises :
-
-```bash
-pip install flask
-pip install reportlab
-```
-
-## Structure du projet
-
-```
-CCNM/
-│
-├── app.py                 # Application Flask principale
-├── schema.sql             # Schéma de base de données SQLite
-├── database.db            # Base de données SQLite (créée au premier démarrage)
-├── pdf_generator.py       # Script de génération de fiches PDF
-├── README.md              # Documentation du projet
-│
-├── static/                # Fichiers statiques
-│   ├── css/               # Feuilles de style CSS
-│   │   └── style.css      # Style principal du site
-│   │
-│   └── uploads/           # Dossier pour les images téléchargées
-│
-└── templates/             # Templates HTML
-    ├── base.html          # Template de base avec header et footer
-    ├── index.html         # Page d'accueil
-    ├── detail.html        # Page de détail d'un objet
-    ├── categories.html    # Liste des catégories
-    ├── categorie.html     # Objets d'une catégorie spécifique
-    ├── resultats.html     # Résultats de recherche
-    │
-    └── admin/             # Templates d'administration
-        ├── index.html     # Tableau de bord admin
-        ├── ajouter.html   # Formulaire d'ajout
-        └── modifier.html  # Formulaire de modification
-```
-
-## Utilisation
-
-1. Démarrez l'application :
-
-```bash
-python app.py
-```
-
-2. Accédez à l'application dans votre navigateur à l'adresse `http://127.0.0.1:5000`
-
-3. Pour accéder à l'interface d'administration, naviguez vers `http://127.0.0.1:5000/admin`
-
-## Personnalisation
-
-### Modifier l'apparence
-
-Vous pouvez personnaliser l'apparence du site en modifiant le fichier `static/css/style.css`. Les couleurs principales sont définies comme variables CSS au début du fichier :
-
-```css
-:root {
-    --primary-color: #2c3e50;
-    --secondary-color: #3498db;
-    --accent-color: #e74c3c;
-    --light-color: #ecf0f1;
-    --dark-color: #2c3e50;
-    --text-color: #333;
-}
-```
-
-### Ajouter des catégories personnalisées
-
-Les catégories sont créées dynamiquement lorsque vous ajoutez ou modifiez un objet. Il suffit de spécifier une nouvelle catégorie dans le champ correspondant du formulaire.
-
-## Déploiement en production
-
-Pour un environnement de production, il est recommandé de :
-
-1. Utiliser un serveur WSGI comme Gunicorn ou uWSGI
-2. Configurer un serveur web comme Nginx en tant que proxy inverse
-3. Désactiver le mode debug (`debug=False` dans app.py)
-4. Configurer une clé secrète sécurisée pour Flask
-5. Mettre en place HTTPS
-
-Exemple de configuration pour Gunicorn :
-
-```bash
-pip install gunicorn
-gunicorn -w 4 -b 127.0.0.1:8000 app:app
-```
-
----
-Les paramètres de sécurité (nombre de tentatives, durée de blocage) sont configurables directement dans le module login_security.py.
----
-
-
-
+Un guide complet pour le déploiement sur un serveur Linux (Ubuntu/Debian) avec Nginx et Gunicorn est disponible dans le fichier [DEPLOY.md](DEPLOY.md).
 
 ## Licence
 
-Ce projet est disponible sous licence MIT. Vous êtes libre de l'utiliser, le modifier et le distribuer selon vos besoins.
-
-## Contact
-
-Pour toute question ou suggestion, veuillez créer une issue sur ce dépôt.
+Ce projet est développé pour le CCNM.

@@ -9,13 +9,14 @@ from flask import url_for
 import json
 from datetime import datetime
 
-def generate_object_pdf(objet, images, base_url):
+def generate_object_pdf(objet, images, liens, base_url):
     """
     Génère un fichier PDF pour un objet du catalogue avec ses détails et images
 
     Args:
         objet: Dictionnaire contenant les détails de l'objet
         images: Liste des images associées à l'objet
+        liens: Liste des liens (informations) associés à l'objet
         base_url: URL de base pour construire les chemins complets des images
 
     Returns:
@@ -150,11 +151,21 @@ def generate_object_pdf(objet, images, base_url):
         elements.append(create_paragraph(objet['description'], normal_style))
         elements.append(Spacer(1, 0.5*cm))
 
-    # Formater l'URL cliquable
-    url_formatted = "-"
-    if objet['url']:
+    # Formater les URLs cliquables
+    links_cell_content = []
+    if liens:
+        for lien in liens:
+            if lien['url']:
+                url_html = format_clickable_url(lien['url'])
+                # Ajouter une puce avant chaque lien
+                links_cell_content.append(Paragraph(f"• {url_html}", url_style))
+    elif objet['url']:
+        # Fallback pour la rétrocompatibilité
         url_html = format_clickable_url(objet['url'])
-        url_formatted = Paragraph(url_html, url_style)
+        links_cell_content.append(Paragraph(f"• {url_html}", url_style))
+    
+    if not links_cell_content:
+        links_cell_content = create_paragraph("-", normal_style)
 
     # Informations techniques sous forme de tableau
     elements.append(Paragraph("Données générales", heading2_style))
@@ -165,7 +176,7 @@ def generate_object_pdf(objet, images, base_url):
         ["Modèle", create_paragraph(objet['nom'], table_cell_style)],
         ["Fabricant", create_paragraph(objet['fabricant'] or "Non spécifié", table_cell_style)],
         ["Année de sortie", create_paragraph(objet['date_fabrication'] or "Non spécifiée", table_cell_style)],
-        ["Informations", url_formatted],
+        ["Informations", links_cell_content],
         ["État de l'objet", create_paragraph(objet['etat'] or "Non spécifié", table_cell_style)],
         ["Numéro d'inventaire", create_paragraph(objet['numero_inventaire'] or "Non spécifié", table_cell_style)]
     ]

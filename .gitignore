@@ -37,3 +37,4 @@ logs/*
 
 # Fichiers temporaires ou générés
 utils/sync_categories.log
+GEMINI.md

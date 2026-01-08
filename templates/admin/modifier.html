@@ -43,16 +43,40 @@
             <input type="text" id="date_fabrication" name="date_fabrication" value="{{ objet['date_fabrication'] }}">
         </div>
 
-        <div class="form-group">
-            <label for="donnees_complementaires">Informations</label>
-            <input type="url" id="donnees_complementaires" name="donnees_complementaires" value="{{ objet['url'] }}" placeholder="https://...">
-            <small>Entrez une URL complète (ex: https://exemple.com)</small>
+        <div class="form-group liens-supplementaires">
+            <label>Informations (URL)</label>
+            <div class="liens-upload-container" id="liens-container">
+                {% if liens %}
+                    {% for lien in liens %}
+                    <div class="lien-upload-item" style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
+                        <input type="url" name="liens" value="{{ lien.url }}" placeholder="https://..." style="flex-grow: 1;">
+                        <button type="button" class="btn-small danger" onclick="supprimerChampLien(this)">-</button>
+                    </div>
+                    {% endfor %}
+                    <!-- Toujours avoir un bouton d'ajout à la fin, ou à côté du dernier ? 
+                         Le design demande un "+" pour ajouter. On le met en bas de la liste ou sur la première ligne ? 
+                         L'instruction disait "min 1 champ avec un bouton + à droite". 
+                         On va ajouter un bouton global d'ajout en bas ou sur la dernière ligne.
+                         Pour simplifier l'UI : chaque ligne a un "-", et on met un bouton "+" en dessous ou sur la première ligne si vide.
+                    -->
+                {% else %}
+                    <div class="lien-upload-item" style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
+                        <input type="url" name="liens" placeholder="https://..." style="flex-grow: 1;">
+                        <!-- Le premier champ n'a pas forcément de bouton "-" si c'est le seul, mais l'instruction dit "min 1 champ". 
+                             On va laisser le bouton "-" partout pour simplifier, sauf si c'est le seul ? 
+                             Non, l'instruction dit "Chaque champ supplémentaire comporte un bouton -".
+                        -->
+                    </div>
+                {% endif %}
+            </div>
+            <button type="button" class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="ajouterChampLien()">+ Ajouter un lien</button>
+            <br><small>Entrez des URL complètes (ex: https://exemple.com)</small>
         </div>
 
         <div class="form-group">
             <label for="numero_inventaire">Numéro d'inventaire *</label>
-            <input type="text" id="numero_inventaire" name="numero_inventaire" value="{{ objet['numero_inventaire'] }}" required>
-            <small>Ce numéro doit être unique pour chaque objet</small>
+            <input type="text" id="numero_inventaire" name="numero_inventaire" value="{{ objet['numero_inventaire'] }}" required readonly class="readonly-input">
+            <small>Ce numéro ne peut pas être modifié</small>
         </div>
 
         <div class="form-group">
@@ -352,6 +376,26 @@
 
         // Remettre l'image parmi celles à conserver
         document.getElementById(`keep-image-${imageId}`).name = 'garder_image';
+    }
+
+    // Gestion des liens dynamiques
+    function ajouterChampLien() {
+        const container = document.getElementById('liens-container');
+        const newItem = document.createElement('div');
+        newItem.className = 'lien-upload-item';
+        newItem.style.cssText = "display: flex; gap: 10px; margin-bottom: 10px; align-items: center;";
+
+        newItem.innerHTML = `
+            <input type="url" name="liens" placeholder="https://..." style="flex-grow: 1;">
+            <button type="button" class="btn-small danger" onclick="supprimerChampLien(this)">-</button>
+        `;
+
+        container.appendChild(newItem);
+    }
+
+    function supprimerChampLien(button) {
+        const item = button.parentElement;
+        item.remove();
     }
 
     // Initialiser les éléments au chargement de la page

@@ -1,5 +1,6 @@
 -- schema.sql - Structure de la base de données optimisée
 
+DROP TABLE IF EXISTS liens;
 DROP TABLE IF EXISTS images;
 DROP TABLE IF EXISTS objets;
 DROP TABLE IF EXISTS login_attempts;
@@ -11,7 +12,6 @@ CREATE TABLE objets (
     categorie TEXT,
     fabricant TEXT,
     date_fabrication TEXT,
-    url TEXT,
     numero_inventaire TEXT,
     image_principale TEXT,
     etat TEXT,
@@ -25,6 +25,15 @@ CREATE TABLE images (
     objet_id INTEGER NOT NULL,
     chemin TEXT NOT NULL,
     legende TEXT,
+    ordre INTEGER DEFAULT 0,
+    FOREIGN KEY (objet_id) REFERENCES objets (id) ON DELETE CASCADE
+);
+
+CREATE TABLE liens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    objet_id INTEGER NOT NULL,
+    url TEXT NOT NULL,
+    titre TEXT,
     ordre INTEGER DEFAULT 0,
     FOREIGN KEY (objet_id) REFERENCES objets (id) ON DELETE CASCADE
 );

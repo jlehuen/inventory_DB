@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-ui.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modernui.css') }}">
 </head>
 <body>
     <header>
@@ -53,7 +53,7 @@
         </nav>
     </header>
 
-    <main>
+    <main class="{% block main_class %}{% endblock %}">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
