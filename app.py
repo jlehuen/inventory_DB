@@ -1,0 +1,1097 @@
+# app.py - Application Flask principale avec authentification
+
+import os
+import json
+import uuid
+import sqlite3
+import logging
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
+from PIL import Image
+
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, send_file, send_from_directory
+from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_wtf import FlaskForm, CSRFProtect
+from wtforms import StringField, PasswordField, SubmitField
+from wtforms.validators import DataRequired, Length
+from dotenv import load_dotenv
+
+from scripts import pdf_generator
+from scripts.clean_images import (
+    nettoyer_fichiers,
+    formater_taille_fichier
+)
+
+from scripts.login_security import (
+    check_login_attempts,
+    increment_login_attempts,
+    reset_login_attempts,
+    init_security_db,
+    cleanup_old_attempts,
+    get_login_attempts_status
+)
+
+# Chargement des variables d'environnement
+load_dotenv()
+
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
+app.config['UPLOAD_FOLDER'] = 'database/uploads'
+app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))  # 16MB par défaut
+
+# Initialiser la protection CSRF
+csrf = CSRFProtect(app)
+
+# Assurez-vous que les dossiers nécessaires existent
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs('logs', exist_ok=True)
+
+# Configuration de la journalisation
+file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+))
+file_handler.setLevel(logging.INFO)
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
+
+# Extension de fichiers autorisées
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+# Classe User pour l'authentification
+class User:
+    def __init__(self, id, username, password_hash):
+        self.id = id
+        self.username = username
+        self.password_hash = password_hash
+        self.is_authenticated = True
+        self.is_active = True
+        self.is_anonymous = False
+
+    def get_id(self):
+        return str(self.id)
+
+    @staticmethod
+    def get(user_id, db_connection):
+        """Récupère un utilisateur par son ID"""
+        conn = db_connection()
+        user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+        conn.close()
+
+        if user:
+            return User(user['id'], user['username'], user['password_hash'])
+        return None
+
+    @staticmethod
+    def get_by_username(username, db_connection):
+        """Récupère un utilisateur par son nom d'utilisateur"""
+        conn = db_connection()
+        user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+        conn.close()
+
+        if user:
+            return User(user['id'], user['username'], user['password_hash'])
+        return None
+
+    def verify_password(self, password):
+        """Vérifie si le mot de passe correspond au hash stocké"""
+        return check_password_hash(self.password_hash, password)
+
+# Classe de formulaire pour la connexion
+class LoginForm(FlaskForm):
+    username = StringField('Nom d\'utilisateur', validators=[DataRequired()])
+    password = PasswordField('Mot de passe', validators=[DataRequired()])
+    submit = SubmitField('Connexion')
+
+# Configuration de Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(int(user_id), get_db_connection)
+
+# Fonction pour charger le fichier des attributs spécifiques
+# Charger les définitions au démarrage de l'application
+# CATEGORIE_ATTRIBUTS = get_categorie_attributs()
+
+def get_categorie_attributs():
+    """Charge les définitions d'attributs spécifiques depuis le fichier JSON"""
+    json_path = os.path.join('static', 'categories.json')
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            categories_data = json.load(f)
+
+            # Adapter au nouveau format JSON (extraire uniquement les attributs)
+            attributs = {}
+            for categorie, data in categories_data.items():
+                if 'attributes' in data:
+                    attributs[categorie] = data['attributes']
+
+            return attributs
+    except Exception as e:
+        app.logger.error(f"Erreur lors du chargement des définitions d'attributs: {e}")
+        return {}  # Retourner un dictionnaire vide en cas d'erreur
+
+# Fonction pour récupérer les informations des catégories (avec icônes)
+def get_categories_info():
+    """Charge les informations complètes des catégories depuis le fichier JSON"""
+    json_path = os.path.join('static', 'categories.json')
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        app.logger.error(f"Erreur lors du chargement des informations de catégories: {e}")
+        return {}  # Retourner un dictionnaire vide en cas d'erreur
+
+# Filtre Jinja pour convertir les chaînes JSON en dictionnaires Python
+@app.template_filter('from_json')
+def from_json(value):
+    try:
+        if value:
+            return json.loads(value)
+        return {}
+    except:
+        return {}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def get_db_connection():
+    conn = sqlite3.connect('database/database.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    conn = get_db_connection()
+    with open('static/schema.sql') as f:
+        conn.executescript(f.read())
+    conn.commit()
+    conn.close()
+    app.logger.info('Base de données initialisée')
+
+def init_security():
+    """Initialise la table de sécurité pour les tentatives de connexion"""
+    init_security_db(get_db_connection)
+    app.logger.info('Table de sécurité initialisée')
+
+def init_auth_db():
+    """Initialise la table des utilisateurs dans la base de données"""
+    conn = get_db_connection()
+    conn.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+
+    conn.execute('''
+    CREATE TABLE IF NOT EXISTS auth_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        action TEXT NOT NULL,
+        ip_address TEXT,
+        user_agent TEXT,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id)
+    )
+    ''')
+
+    conn.commit()
+    conn.close()
+    app.logger.info('Tables d\'authentification initialisées')
+
+def create_admin_user():
+    """Crée un utilisateur administrateur s'il n'existe pas déjà"""
+    admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
+    admin_password = os.environ.get('ADMIN_PASSWORD', 'password')
+
+    conn = get_db_connection()
+    # Vérifier si l'admin existe déjà
+    admin = conn.execute('SELECT id FROM users WHERE username = ?',
+                        (admin_username,)).fetchone()
+
+    if not admin:
+        # Créer l'administrateur
+        password_hash = generate_password_hash(admin_password)
+        conn.execute(
+            'INSERT INTO users (username, password_hash) VALUES (?, ?)',
+            (admin_username, password_hash)
+        )
+        conn.commit()
+        app.logger.info(f'Utilisateur administrateur "{admin_username}" créé')
+
+    conn.close()
+
+def log_auth_attempt(user_id, action, request):
+    """Enregistre les tentatives d'authentification dans la base de données"""
+    conn = get_db_connection()
+
+    ip_address = request.remote_addr
+    user_agent = request.user_agent.string
+
+    conn.execute(
+        'INSERT INTO auth_logs (user_id, action, ip_address, user_agent) VALUES (?, ?, ?, ?)',
+        (user_id, action, ip_address, user_agent)
+    )
+
+    conn.commit()
+    conn.close()
+
+def update_db_schema():
+    """Mettre à jour le schéma de la base de données"""
+    conn = get_db_connection()
+    try:
+        # Vérifier si les colonnes existent déjà
+        cursor = conn.execute("PRAGMA table_info(objets)")
+        columns = [col['name'] for col in cursor.fetchall()]
+
+        app.logger.info(f"Colonnes existantes: {columns}")
+
+        # Ajouter la colonne attributs_specifiques si elle n'existe pas
+        if 'attributs_specifiques' not in columns:
+            app.logger.info("Ajout de la colonne attributs_specifiques")
+            conn.execute('ALTER TABLE objets ADD COLUMN attributs_specifiques TEXT')
+
+        # Ajouter la colonne date_creation si elle n'existe pas
+        if 'date_creation' not in columns:
+            app.logger.info("Ajout de la colonne date_creation")
+            conn.execute('ALTER TABLE objets ADD COLUMN date_creation TEXT DEFAULT NULL')
+            # Mettre à jour les lignes existantes avec la date actuelle
+            current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            conn.execute(f"UPDATE objets SET date_creation = '{current_date}' WHERE date_creation IS NULL")
+
+        # Ajouter la colonne date_modification si elle n'existe pas
+        if 'date_modification' not in columns:
+            app.logger.info("Ajout de la colonne date_modification")
+            conn.execute('ALTER TABLE objets ADD COLUMN date_modification TEXT DEFAULT NULL')
+
+        conn.commit()
+        app.logger.info("Schéma de base de données mis à jour avec succès!")
+    except Exception as e:
+        app.logger.error(f"Erreur lors de la mise à jour du schéma: {e}")
+    finally:
+        conn.close()
+
+
+def secure_file_path(base_dir, user_input):
+    """
+    Vérifie que le chemin fourni ne sort pas du répertoire de base
+    """
+    from pathlib import Path
+
+    # Normaliser le chemin pour supprimer les ../../ etc.
+    base_path = Path(base_dir).resolve()
+
+    # Joindre les chemins et résoudre les symboles
+    try:
+        user_path = (base_path / user_input).resolve()
+
+        # Vérifier que le chemin est bien à l'intérieur du répertoire de base
+        if base_path in user_path.parents or base_path == user_path:
+            return str(user_path)
+        else:
+            return None  # Chemin en dehors du répertoire autorisé
+    except (ValueError, FileNotFoundError):
+        return None
+
+def save_uploaded_file(file):
+    """Enregistre un fichier téléchargé et retourne le chemin relatif"""
+    if file and allowed_file(file.filename):
+        # Générer un nom unique pour éviter les conflits
+        filename = str(uuid.uuid4()) + '_' + secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+
+        # Optimisation automatique de l'image
+        try:
+            with Image.open(filepath) as img:
+                max_size = (1600, 1600)
+                
+                # On redimensionne si l'image est plus grande que la cible
+                # Ou on ré-enregistre simplement pour appliquer la compression JPEG
+                if img.width > max_size[0] or img.height > max_size[1]:
+                    img.thumbnail(max_size, Image.Resampling.LANCZOS)
+                
+                # Conversion en RGB si nécessaire (pour éviter les erreurs avec les JPEG)
+                if img.mode in ('RGBA', 'P') and filepath.lower().endswith(('.jpg', '.jpeg')):
+                    img = img.convert('RGB')
+
+                # Sauvegarde avec optimisation et qualité réduite (85%)
+                img.save(filepath, optimize=True, quality=85)
+                app.logger.info(f"Image optimisée automatiquement : {filename}")
+
+        except Exception as e:
+            app.logger.error(f"Erreur lors de l'optimisation de l'image {filename}: {e}")
+            # On ne bloque pas l'upload si l'optimisation échoue, l'image originale est déjà là
+
+        return 'database/uploads/' + filename
+    return None
+
+def numero_inventaire_existe(numero, exclude_id=None):
+    """
+    Vérifie si un numéro d'inventaire existe déjà dans la base de données.
+
+    Args:
+        numero: Le numéro d'inventaire à vérifier
+        exclude_id: ID de l'objet à exclure de la vérification (utile lors des modifications)
+
+    Returns:
+        bool: True si le numéro existe déjà, False sinon
+    """
+    if not numero:  # Si le numéro est vide, il n'y a pas de conflit
+        return False
+
+    conn = get_db_connection()
+
+    if exclude_id:
+        # Lors d'une modification, exclure l'objet actuel
+        result = conn.execute(
+            'SELECT COUNT(*) FROM objets WHERE numero_inventaire = ? AND id != ?',
+            (numero, exclude_id)
+        ).fetchone()
+    else:
+        # Lors d'un ajout, vérifier tous les objets
+        result = conn.execute(
+            'SELECT COUNT(*) FROM objets WHERE numero_inventaire = ?',
+            (numero,)
+        ).fetchone()
+
+    conn.close()
+
+    # Si le compte est supérieur à 0, le numéro existe déjà
+    return result[0] > 0
+
+# Routes d'authentification
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    # Rediriger si l'utilisateur est déjà connecté
+    if current_user.is_authenticated:
+        return redirect(url_for('collection'))
+
+    form = LoginForm()
+
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
+
+        # Vérifier si l'utilisateur n'est pas bloqué
+        allowed, message = check_login_attempts(username, request, get_db_connection, logger=app.logger)
+        if not allowed:
+            flash(message, 'error')
+            return render_template('login.html', form=form)
+
+        user = User.get_by_username(username, get_db_connection)
+
+        if user and user.verify_password(password):
+            # Connexion réussie
+            login_user(user)
+            reset_login_attempts(username, request, get_db_connection, logger=app.logger)  # Réinitialiser les tentatives
+
+            # Journaliser la connexion réussie
+            log_auth_attempt(user.id, 'login', request)
+            app.logger.info(f'Connexion réussie pour {username}')
+
+            # Redirection vers la page demandée ou la page collection
+            next_page = request.args.get('next')
+            flash('Connexion réussie', 'success')
+            return redirect(next_page or url_for('collection'))
+        else:
+            # Connexion échouée
+            if user:
+                log_auth_attempt(user.id, 'failed_attempt', request)
+            else:
+                log_auth_attempt(None, 'failed_attempt', request)
+
+            app.logger.warning(f'Tentative de connexion échouée pour {username}')
+
+            # Incrémenter le compteur de tentatives
+            is_locked, message = increment_login_attempts(username, request, get_db_connection, logger=app.logger)
+            flash(message, 'error')
+
+    return render_template('login.html', form=form)
+
+@app.route('/logout')
+@login_required
+def logout():
+    # Journaliser la déconnexion
+    if current_user.is_authenticated:
+        log_auth_attempt(current_user.id, 'logout', request)
+        app.logger.info(f'Déconnexion pour {current_user.username}')
+
+    logout_user()
+    flash('Vous avez été déconnecté avec succès', 'success')
+    return redirect(url_for('index'))
+
+# Routes de l'application
+@app.route('/')
+def index():
+    conn = get_db_connection()
+    objets = conn.execute('SELECT * FROM objets ORDER BY date_ajout DESC').fetchall()
+    conn.close()
+    return render_template('index.html', objets=objets)
+
+# Route pour servir les fichiers depuis database/uploads
+@app.route('/static/database/uploads/<path:filename>')
+def serve_upload(filename):
+    return send_from_directory('database/uploads', filename)
+
+@app.route('/objet/<int:id>')
+def detail_objet(id):
+    conn = get_db_connection()
+
+    # Récupérer les informations de l'objet
+    objet = conn.execute('SELECT * FROM objets WHERE id = ?', (id,)).fetchone()
+    if objet is None:
+        abort(404)
+
+    # Récupérer toutes les images associées à cet objet
+    images = conn.execute(
+        'SELECT * FROM images WHERE objet_id = ? ORDER BY ordre',
+        (id,)
+    ).fetchall()
+
+    conn.close()
+    return render_template('detail.html', objet=objet, images=images)
+
+@app.route('/recherche')
+def recherche():
+    query = request.args.get('q', '')
+    if not query:
+        return redirect(url_for('index'))
+
+    conn = get_db_connection()
+
+    # Première étape : recherche dans les champs standard, maintenant avec date_fabrication et etat
+    objets_standard = conn.execute(
+        'SELECT * FROM objets WHERE nom LIKE ? OR description LIKE ? OR fabricant LIKE ? OR numero_inventaire LIKE ? OR date_fabrication LIKE ? OR etat LIKE ?',
+        (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%')
+    ).fetchall()
+
+    # Deuxième étape : recherche dans tous les objets pour vérifier les attributs spécifiques
+    all_objets = conn.execute('SELECT * FROM objets').fetchall()
+
+    # Convertir les objets en dictionnaires pour faciliter la manipulation
+    objets_standard_dict = {obj['id']: dict(obj) for obj in objets_standard}
+
+    # Parcourir tous les objets et vérifier les attributs spécifiques
+    for obj in all_objets:
+        # Si l'objet est déjà dans les résultats, on passe
+        if obj['id'] in objets_standard_dict:
+            continue
+
+        # Vérifier les attributs spécifiques
+        if obj['attributs_specifiques']:
+            try:
+                attributs = json.loads(obj['attributs_specifiques'])
+
+                # Rechercher dans toutes les valeurs des attributs
+                for attr_key, attr_value in attributs.items():
+                    # On ignore les clés techniques (commençant par ordre_ ou label_)
+                    if attr_key.startswith('ordre_') or attr_key.startswith('label_'):
+                        continue
+
+                    # Extraire la valeur saisie selon le format
+                    if isinstance(attr_value, dict) and 'valeur' in attr_value:
+                        # Nouveau format avec objet {valeur, ordre, label}
+                        value_to_check = str(attr_value['valeur']).lower()
+                    else:
+                        # Ancien format : la valeur est directe
+                        value_to_check = str(attr_value).lower()
+
+                    # Si la requête est dans la valeur de l'attribut, ajouter l'objet aux résultats
+                    if query.lower() in value_to_check:
+                        objets_standard_dict[obj['id']] = dict(obj)
+                        break
+
+            except (json.JSONDecodeError, TypeError):
+                # En cas d'erreur de décodage JSON, on ignore simplement cet objet
+                app.logger.warning(f"Erreur décodage JSON pour l'objet ID {obj['id']}")
+                pass
+
+    conn.close()
+
+    # Convertir les résultats en liste pour le template
+    objets = list(objets_standard_dict.values())
+
+    return render_template('resultats.html', objets=objets, query=query)
+
+@app.route('/categories')
+def categories():
+    # Obtenir les informations de catégories depuis le fichier JSON
+    json_categories_info = get_categories_info()
+    json_categories = list(json_categories_info.keys())
+
+    # Récupérer aussi les catégories personnalisées de la base de données
+    conn = get_db_connection()
+    db_categories = []
+
+    if json_categories:
+        placeholders = ','.join(['?'] * len(json_categories))
+        db_categories = [row['categorie'] for row in conn.execute(
+            f'SELECT DISTINCT categorie FROM objets WHERE categorie NOT IN ({placeholders})',
+            json_categories
+        ).fetchall()]
+    else:
+        db_categories = [row['categorie'] for row in conn.execute(
+            'SELECT DISTINCT categorie FROM objets'
+        ).fetchall()]
+
+    conn.close()
+
+    # Combiner les deux sources
+    all_categories = sorted(json_categories + db_categories)
+
+    # Formater pour le template
+    categories_list = []
+    for cat in all_categories:
+        # Vérifier si la catégorie est dans le JSON pour récupérer l'icône
+        if cat in json_categories_info:
+            icon = json_categories_info[cat].get('icon', 'fa-microscope')  # Icône par défaut si non spécifiée
+            categories_list.append({'categorie': cat, 'icon': icon})
+        else:
+            # Catégorie personnalisée sans icône dans le JSON
+            categories_list.append({'categorie': cat, 'icon': 'fa-microscope'})
+
+    return render_template('categories.html', categories=categories_list)
+
+@app.route('/categorie/<categorie>')
+def objets_par_categorie(categorie):
+    conn = get_db_connection()
+    objets = conn.execute('SELECT * FROM objets WHERE categorie = ?', (categorie,)).fetchall()
+    conn.close()
+
+    # Récupérer la description de la catégorie depuis le JSON
+    description = None
+    categories_info = get_categories_info()
+    if categorie in categories_info and 'description' in categories_info[categorie]:
+        description = categories_info[categorie]['description']
+
+    return render_template('categorie.html', objets=objets, categorie=categorie, description=description)
+
+@app.route('/collection')
+def collection():
+    """Affiche toute la collection sous forme de tableau triable"""
+    conn = get_db_connection()
+    objets = conn.execute('''
+        SELECT id, nom, categorie, fabricant, date_fabrication, numero_inventaire
+        FROM objets
+        ORDER BY nom ASC
+    ''').fetchall()
+    conn.close()
+    return render_template('collection.html', objets=objets)
+
+
+@app.route('/admin')
+@login_required
+def admin():
+    """Rediriger vers la page collection qui contient maintenant toutes les fonctionnalités admin"""
+    return redirect(url_for('collection'))
+
+@app.route('/admin/ajouter', methods=('GET', 'POST'))
+@login_required
+def ajouter_objet():
+    if request.method == 'POST':
+        nom = request.form['nom']
+        description = request.form['description']
+
+        # Gestion de la catégorie personnalisée
+        if 'categorie_personnalisee' in request.form and request.form['categorie_personnalisee'].strip():
+            categorie = request.form['categorie_personnalisee'].strip()
+        else:
+            categorie = request.form['categorie']
+
+        fabricant = request.form['fabricant']
+        date_fabrication = request.form['date_fabrication']
+        url = request.form['donnees_complementaires']
+        numero_inventaire = request.form['numero_inventaire']
+
+        # Collecte des attributs spécifiques
+        attributs_specifiques = {}
+        for key, value in request.form.items():
+            if key.startswith('attr_') and not key.startswith('attr_ordre_') and not key.startswith('attr_label_') and value.strip():
+                attr_key = key[5:]  # Enlever le préfixe 'attr_'
+
+                # Récupérer le label et l'ordre depuis les champs cachés
+                label = request.form.get(f'attr_label_{attr_key}', attr_key.replace('_', ' ').title())
+                ordre = request.form.get(f'attr_ordre_{attr_key}', 999)
+
+                attributs_specifiques[attr_key] = {
+                    'valeur': value.strip(),
+                    'label': label,
+                    'ordre': ordre
+                }
+
+        # Convertir en JSON
+        attributs_json = json.dumps(attributs_specifiques) if attributs_specifiques else None
+
+        # Validation
+        error = None
+
+        if not nom:
+            error = 'Le nom est obligatoire!'
+        elif not categorie:
+            error = 'La catégorie est obligatoire!'
+        elif not numero_inventaire:
+            error = 'Le numéro d\'inventaire est obligatoire!'
+        elif numero_inventaire_existe(numero_inventaire):
+            error = f'Le numéro d\'inventaire "{numero_inventaire}" existe déjà!'
+
+        if error:
+            flash(error, 'error')
+            # Renvoyer le formulaire avec les données déjà saisies
+            return render_template('admin/ajouter.html',
+                                  objet={
+                                      'nom': nom,
+                                      'description': description,
+                                      'categorie': categorie,
+                                      'fabricant': fabricant,
+                                      'date_fabrication': date_fabrication,
+                                      'url': url,
+                                      'numero_inventaire': numero_inventaire,
+                                      'attributs_specifiques': attributs_json
+                                  })
+        else:
+            conn = get_db_connection()
+
+            # Gestion de l'image principale
+            image_principale_path = ''
+            if 'image_principale' in request.files:
+                file = request.files['image_principale']
+                image_path = save_uploaded_file(file)
+                if image_path:
+                    image_principale_path = image_path
+
+            # Insérer les informations de l'objet
+            cursor = conn.execute(
+                'INSERT INTO objets (nom, description, categorie, fabricant, date_fabrication, url, numero_inventaire, image_principale, date_ajout, attributs_specifiques) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (nom, description, categorie, fabricant, date_fabrication, url, numero_inventaire, image_principale_path, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), attributs_json)
+            )
+
+            objet_id = cursor.lastrowid
+
+            # Traitement des images supplémentaires
+            if 'images_supplementaires' in request.files:
+                files = request.files.getlist('images_supplementaires')
+                for i, file in enumerate(files):
+                    image_path = save_uploaded_file(file)
+                    if image_path:
+                        legende = request.form.get(f'legende_{i}', '')
+                        # Utiliser l'index comme ordre
+                        conn.execute(
+                            'INSERT INTO images (objet_id, chemin, legende, ordre) VALUES (?, ?, ?, ?)',
+                            (objet_id, image_path, legende, i)
+                        )
+
+            conn.commit()
+            conn.close()
+            app.logger.info(f'Objet "{nom}" ajouté par {current_user.username}')
+            flash('Objet ajouté avec succès !', 'success')
+            return redirect(url_for('admin'))
+
+    return render_template('admin/ajouter.html', objet={})
+
+@app.route('/admin/modifier/<int:id>', methods=('GET', 'POST'))
+@login_required
+def modifier_objet(id):
+    conn = get_db_connection()
+    objet = conn.execute('SELECT * FROM objets WHERE id = ?', (id,)).fetchone()
+
+    if objet is None:
+        abort(404)
+
+    # Récupérer les images existantes
+    images = conn.execute('SELECT * FROM images WHERE objet_id = ? ORDER BY ordre', (id,)).fetchall()
+
+    if request.method == 'POST':
+        nom = request.form['nom']
+        description = request.form['description']
+
+        # Gestion de la catégorie personnalisée
+        if 'categorie_personnalisee' in request.form and request.form['categorie_personnalisee'].strip():
+            categorie = request.form['categorie_personnalisee'].strip()
+        else:
+            categorie = request.form['categorie']
+
+        fabricant = request.form['fabricant']
+        date_fabrication = request.form['date_fabrication']
+        url = request.form['donnees_complementaires']
+        numero_inventaire = request.form['numero_inventaire']
+        etat = request.form.get('etat', '')  # Récupération de l'état de l'objet
+
+        # Collecte des attributs spécifiques
+        attributs_specifiques = {}
+        for key, value in request.form.items():
+            if key.startswith('attr_') and not key.startswith('attr_ordre_') and not key.startswith('attr_label_') and value.strip():
+                attr_key = key[5:]  # Enlever le préfixe 'attr_'
+
+                # Récupérer le label et l'ordre depuis les champs cachés
+                label = request.form.get(f'attr_label_{attr_key}', attr_key.replace('_', ' ').title())
+                ordre = request.form.get(f'attr_ordre_{attr_key}', 999)
+
+                attributs_specifiques[attr_key] = {
+                    'valeur': value.strip(),
+                    'label': label,
+                    'ordre': ordre
+                }
+
+        # Convertir en JSON
+        attributs_json = json.dumps(attributs_specifiques) if attributs_specifiques else None
+
+        # Validation
+        error = None
+
+        if not nom:
+            error = 'Le nom est obligatoire!'
+        elif not categorie:
+            error = 'La catégorie est obligatoire!'
+        elif numero_inventaire and numero_inventaire_existe(numero_inventaire, exclude_id=id):
+            error = f'Le numéro d\'inventaire "{numero_inventaire}" existe déjà!'
+
+        if error:
+            flash(error, 'error')
+            # Récupérer à nouveau les images pour le formulaire
+            images = conn.execute('SELECT * FROM images WHERE objet_id = ? ORDER BY ordre', (id,)).fetchall()
+            conn.close()
+
+            # Renvoyer le formulaire avec les données modifiées
+            modified_objet = dict(objet)
+            modified_objet.update({
+                'nom': nom,
+                'description': description,
+                'categorie': categorie,
+                'fabricant': fabricant,
+                'date_fabrication': date_fabrication,
+                'url': url,
+                'numero_inventaire': numero_inventaire,
+                'etat': etat,  # Inclure l'état dans les données modifiées
+                'attributs_specifiques': attributs_json
+            })
+
+            return render_template('admin/modifier.html', objet=modified_objet, images=images)
+        else:
+            # Gestion de l'image principale
+            image_principale_path = objet['image_principale']
+            if 'image_principale' in request.files:
+                file = request.files['image_principale']
+                image_path = save_uploaded_file(file)
+                if image_path:
+                    image_principale_path = image_path
+
+            # Mettre à jour les informations de l'objet
+            current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            conn.execute(
+                'UPDATE objets SET nom = ?, description = ?, categorie = ?, fabricant = ?, date_fabrication = ?, url = ?, numero_inventaire = ?, image_principale = ?, attributs_specifiques = ?, etat = ?, date_modification = ? WHERE id = ?',
+                (nom, description, categorie, fabricant, date_fabrication, url, numero_inventaire, image_principale_path, attributs_json, etat, current_datetime, id)
+            )
+
+            # Traitement des images à conserver
+            images_to_keep = request.form.getlist('garder_image')
+
+            # Supprimer les images qui ne sont pas dans la liste à conserver
+            images_to_delete = []
+            if images_to_keep:
+                placeholders = ','.join(['?'] * len(images_to_keep))
+                images_to_delete = conn.execute(
+                    f'SELECT id, chemin FROM images WHERE objet_id = ? AND id NOT IN ({placeholders})',
+                    [id] + images_to_keep
+                ).fetchall()
+            else:
+                images_to_delete = conn.execute(
+                    'SELECT id, chemin FROM images WHERE objet_id = ?',
+                    (id,)
+                ).fetchall()
+
+            # Supprimer les fichiers physiques des images
+            for image in images_to_delete:
+                try:
+                    file_path = os.path.join('static', image['chemin'])
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                except Exception as e:
+                    app.logger.error(f"Erreur lors de la suppression du fichier {image['chemin']}: {e}")
+
+            # Supprimer les entrées dans la base de données
+            if not images_to_keep:
+                conn.execute('DELETE FROM images WHERE objet_id = ?', (id,))
+            else:
+                placeholders = ','.join(['?'] * len(images_to_keep))
+                conn.execute(
+                    f'DELETE FROM images WHERE objet_id = ? AND id NOT IN ({placeholders})',
+                    [id] + images_to_keep
+                )
+
+            # Mettre à jour les légendes des images existantes
+            for image_id in images_to_keep:
+                legende = request.form.get(f'legende_{image_id}', '')
+                conn.execute('UPDATE images SET legende = ? WHERE id = ?', (legende, image_id))
+
+            # Traitement des nouvelles images
+            if 'nouvelles_images' in request.files:
+                files = request.files.getlist('nouvelles_images')
+                # Obtenir l'ordre maximum actuel
+                max_ordre = conn.execute('SELECT MAX(ordre) FROM images WHERE objet_id = ?', (id,)).fetchone()[0] or 0
+
+                for i, file in enumerate(files):
+                    image_path = save_uploaded_file(file)
+                    if image_path:
+                        legende = request.form.get(f'nouvelle_legende_{i}', '')
+                        conn.execute(
+                            'INSERT INTO images (objet_id, chemin, legende, ordre) VALUES (?, ?, ?, ?)',
+                            (id, image_path, legende, max_ordre + i + 1)
+                        )
+
+            conn.commit()
+            conn.close()
+            app.logger.info(f'Objet "{nom}" (ID: {id}) modifié par {current_user.username}')
+            flash('Objet modifié avec succès !', 'success')
+            return redirect(url_for('admin'))
+
+    conn.close()
+    return render_template('admin/modifier.html', objet=objet, images=images)
+
+@app.route('/admin/supprimer/<int:id>', methods=('POST',))
+@login_required
+def supprimer_objet(id):
+    conn = get_db_connection()
+    # Récupérer l'objet avant suppression pour la journalisation
+    objet = conn.execute('SELECT nom FROM objets WHERE id = ?', (id,)).fetchone()
+
+    # Récupérer les chemins des images pour pouvoir les supprimer du système de fichiers
+    images = conn.execute('SELECT chemin FROM images WHERE objet_id = ?', (id,)).fetchall()
+    image_principale = conn.execute('SELECT image_principale FROM objets WHERE id = ?', (id,)).fetchone()
+
+    # Supprimer l'objet (la contrainte CASCADE supprimera aussi les images dans la base)
+    conn.execute('DELETE FROM objets WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+
+    # Supprimer les fichiers d'images du système de fichiers
+    for image in images:
+        if image['chemin']:
+            try:
+                file_path = os.path.join('static', image['chemin'])
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                app.logger.error(f"Erreur lors de la suppression du fichier {image['chemin']}: {e}")
+
+    # Supprimer l'image principale
+    if image_principale and image_principale['image_principale']:
+        try:
+            file_path = os.path.join('static', image_principale['image_principale'])
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            app.logger.error(f"Erreur lors de la suppression de l'image principale: {e}")
+
+    if objet:
+        app.logger.info(f'Objet "{objet["nom"]}" (ID: {id}) supprimé par {current_user.username}')
+    flash('Objet supprimé avec succès !', 'success')
+    return redirect(url_for('admin'))
+
+@app.route('/admin/security', methods=['GET'])
+@login_required
+def admin_security():
+    """Page d'administration pour visualiser l'état des tentatives de connexion"""
+    # Nettoyer les anciennes tentatives à chaque visite de la page
+    cleanup_old_attempts(get_db_connection, days=30, logger=app.logger)
+
+    # Récupérer l'état actuel
+    login_status = get_login_attempts_status(get_db_connection)
+
+    return render_template('admin/security.html', login_status=login_status)
+
+@app.route('/objet/<int:id>/pdf')
+def generate_pdf(id):
+    conn = get_db_connection()
+
+    # Récupérer les informations de l'objet
+    objet = conn.execute('SELECT * FROM objets WHERE id = ?', (id,)).fetchone()
+    if objet is None:
+        abort(404)
+
+    # Récupérer toutes les images associées à cet objet
+    images = conn.execute(
+        'SELECT * FROM images WHERE objet_id = ? ORDER BY ordre',
+        (id,)
+    ).fetchall()
+
+    conn.close()
+
+    # Générer le PDF
+    base_url = request.url_root
+    pdf_buffer = pdf_generator.generate_object_pdf(objet, images, base_url)
+
+    # Renvoyer le PDF comme fichier téléchargeable
+    return send_file(
+        pdf_buffer,
+        as_attachment=True,
+        download_name=f"{objet['nom']}-fiche.pdf",
+        mimetype='application/pdf'
+    )
+
+# Séparation des fonctions GET et POST pour le nettoyage
+@app.route('/admin/nettoyage', methods=['GET'])
+@login_required
+def nettoyer_fichiers():
+    """Affiche la page de simulation du nettoyage des fichiers"""
+    try:
+        # Exécuter la détection des orphelins sans suppression (simulation)
+        # Code spécifique pour l'aperçu, ne supprime rien
+        dossier_uploads = app.config['UPLOAD_FOLDER']
+        orphelins = []
+        erreurs = []
+
+        # Vérifier que le dossier existe
+        if not os.path.exists(dossier_uploads):
+            flash(f"Le dossier {dossier_uploads} n'existe pas.", "error")
+            return redirect(url_for('admin'))
+
+        # Récupérer tous les fichiers du dossier
+        fichiers_dossier = []
+        for fichier in os.listdir(dossier_uploads):
+            ext = fichier.split('.')[-1].lower() if '.' in fichier else ''
+            if ext in ALLOWED_EXTENSIONS:
+                fichiers_dossier.append(fichier)
+
+        # Récupérer les références de la base de données
+        fichiers_references = []
+        conn = get_db_connection()
+
+        # Images principales
+        images_principales = conn.execute(
+            "SELECT image_principale FROM objets WHERE image_principale IS NOT NULL AND image_principale != ''"
+        ).fetchall()
+
+        for img in images_principales:
+            nom_fichier = os.path.basename(img['image_principale'])
+            fichiers_references.append(nom_fichier)
+
+        # Images supplémentaires
+        images_supplementaires = conn.execute(
+            "SELECT chemin FROM images WHERE chemin IS NOT NULL AND chemin != ''"
+        ).fetchall()
+
+        for img in images_supplementaires:
+            nom_fichier = os.path.basename(img['chemin'])
+            fichiers_references.append(nom_fichier)
+
+        conn.close()
+
+        # Identifier les orphelins
+        for fichier in fichiers_dossier:
+            if fichier not in fichiers_references:
+                orphelins.append(fichier)
+
+        # Préparer les résultats pour l'affichage
+        resultats = {
+            "fichiers_dans_dossier": fichiers_dossier,
+            "images_referencees_db": fichiers_references,
+            "orphelins_detectes": orphelins,
+            "fichiers_supprimes": [],
+            "erreurs": erreurs
+        }
+
+        # Message d'information
+        if orphelins:
+            flash(f"Simulation: {len(orphelins)} fichier(s) orphelin(s) détecté(s).", 'info')
+        else:
+            flash("Simulation: Aucun fichier orphelin détecté.", 'info')
+
+    except Exception as e:
+        app.logger.error(f"Erreur lors de la simulation: {str(e)}", exc_info=True)
+        flash(f"Une erreur s'est produite lors de la simulation: {str(e)}", 'error')
+        return redirect(url_for('admin'))
+
+    return render_template('admin/nettoyage.html', resultats=resultats)
+
+@app.route('/admin/nettoyage/execute', methods=['POST'])
+@login_required
+def admin_post_nettoyage():
+    """Exécute le nettoyage des fichiers et redirige vers la page d'administration"""
+    from scripts.clean_images import nettoyer_fichiers, formater_taille_fichier
+
+    try:
+        # Exécuter le nettoyage réel avec la nouvelle fonction
+        resultat = nettoyer_fichiers(app, get_db_connection, ALLOWED_EXTENSIONS)
+
+        # Nombre de fichiers supprimés et espace libéré
+        nb_fichiers = len(resultat['fichiers_supprimes'])
+        espace_texte = formater_taille_fichier(resultat['espace_libere'])
+
+        # Logs pour le débogage
+        app.logger.info(f"Résultats du nettoyage:")
+        app.logger.info(f"- Fichiers supprimés: {nb_fichiers}")
+        app.logger.info(f"- Liste des fichiers: {resultat['fichiers_supprimes']}")
+        app.logger.info(f"- Espace libéré: {espace_texte}")
+        app.logger.info(f"- Erreurs: {len(resultat['erreurs'])}")
+
+        # Message à afficher
+        if nb_fichiers > 0:
+            flash(f"Nettoyage terminé : {nb_fichiers} fichiers supprimés, {espace_texte} d'espace libéré.", 'success')
+        else:
+            flash("Aucun fichier à supprimer n'a été trouvé.", 'info')
+
+        # Journaliser le résultat
+        app.logger.info(f'Nettoyage effectué par {current_user.username}: {nb_fichiers} images supprimées, {espace_texte} libérés')
+
+    except Exception as e:
+        app.logger.error(f"Erreur lors du nettoyage des fichiers: {str(e)}", exc_info=True)
+        flash(f"Une erreur s'est produite lors du nettoyage: {str(e)}", 'error')
+
+    # Rediriger vers la page d'administration
+    return redirect(url_for('admin'))
+
+# Ajout d'entêtes de sécurité
+def add_security_headers(response):
+    # Protection contre le clickjacking
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    # Protection XSS avancée
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    # Empêche le navigateur de deviner le type MIME
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    # Politique de sécurité du contenu (CSP) - version plus permissive pour le développement
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://cdnjs.cloudflare.com data:;"
+    # Référant
+    response.headers['Referrer-Policy'] = 'same-origin'
+    return response
+
+# Gestionnaire d'erreur 404
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+# Gestionnaire d'erreur 500
+@app.errorhandler(500)
+def internal_error(e):
+    app.logger.error(f'Erreur 500: {str(e)}')
+    return render_template('500.html'), 500
+
+if __name__ == '__main__':
+    # Créer la base de données si elle n'existe pas
+    if not os.path.exists('database/database.db'):
+        os.makedirs('database', exist_ok=True)
+        init_db()
+    else:
+        # Mettre à jour le schéma de la base de données si nécessaire
+        update_db_schema()
+
+    # Initialiser les tables d'authentification et créer l'admin
+    init_auth_db()
+    create_admin_user()
+    init_security()
+
+    app.logger.info('Application démarrée')
+
+    # Exécuter l'application en fonction de l'environnement
+    if os.environ.get('FLASK_ENV') == 'development':
+        app.run(debug=True)
+    else:
+        app.run(host='0.0.0.0', port=5000)

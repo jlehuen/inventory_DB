@@ -1,0 +1,182 @@
+<!-- templates/admin/security.html -->
+{% extends 'base.html' %}
+
+{% block title %}Sécurité - Administration{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <div class="admin-header">
+        <h1>Sécurité - Tentatives de connexion</h1>
+        <a href="{{ url_for('collection') }}" class="btn secondary"><i class="fas fa-arrow-left"></i> Retour à la liste</a>
+    </div>
+
+    <div class="admin-content">
+        <div class="security-info">
+            <p>Cette page affiche l'état actuel des tentatives de connexion et des comptes bloqués.</p>
+            <p>Un compte est automatiquement bloqué après 5 tentatives de connexion échouées et reste bloqué pendant 15 minutes.</p>
+            <p>Les anciennes tentatives non bloquées sont automatiquement nettoyées après 30 jours.</p>
+        </div>
+
+        {% if login_status %}
+            <h2>Comptes surveillés</h2>
+            <table class="admin-table sortable-table" id="security-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort="username">Utilisateur <i class="fas fa-sort"></i></th>
+                        <th class="sortable" data-sort="ip">Adresse IP <i class="fas fa-sort"></i></th>
+                        <th class="sortable" data-sort="attempts">Tentatives <i class="fas fa-sort"></i></th>
+                        <th class="sortable" data-sort="status">Statut <i class="fas fa-sort"></i></th>
+                        <th class="sortable" data-sort="remaining">Temps restant <i class="fas fa-sort"></i></th>
+                        <th class="sortable" data-sort="date">Dernière tentative <i class="fas fa-sort"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in login_status %}
+                        <tr class="{% if data.is_locked %}locked-account{% endif %}">
+                            <td>{{ data.username }}</td>
+                            <td>{{ data.ip_address }}</td>
+                            <td>{{ data.attempts }}</td>
+                            <td>
+                                {% if data.is_locked %}
+                                    <span class="status-locked">Bloqué</span>
+                                {% else %}
+                                    <span class="status-active">Actif</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if data.is_locked %}
+                                    {{ data.remaining_minutes }} minute(s)
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ data.last_attempt }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="no-data">
+                <p>Aucune tentative de connexion enregistrée.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+    .security-info {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-radius: var(--border-radius);
+        border-left: 4px solid var(--secondary-color);
+    }
+
+    .locked-account {
+        background-color: #fff3cd;
+    }
+
+    .status-locked {
+        color: #e74c3c;
+        font-weight: bold;
+    }
+
+    .status-active {
+        color: #2ecc71;
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 2rem;
+        background-color: #f8f9fa;
+        border-radius: var(--border-radius);
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Réutiliser le même code de tri que pour la table des objets
+    const sortTable = (table, column, asc = true) => {
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+
+        // Tri des lignes
+        const sortedRows = rows.sort((a, b) => {
+            const aCol = a.cells[column].textContent.trim();
+            const bCol = b.cells[column].textContent.trim();
+
+            // Gérer les valeurs numériques vs textuelles
+            if (!isNaN(aCol) && !isNaN(bCol)) {
+                return asc ? Number(aCol) - Number(bCol) : Number(bCol) - Number(aCol);
+            } else {
+                return asc ? aCol.localeCompare(bCol) : bCol.localeCompare(aCol);
+            }
+        });
+
+        // Supprimer les lignes actuelles
+        while (tbody.firstChild) {
+            tbody.removeChild(tbody.firstChild);
+        }
+
+        // Ajouter les lignes triées
+        tbody.append(...sortedRows);
+
+        // Mettre à jour l'état de tri du tableau
+        table.setAttribute('data-sort-column', column);
+        table.setAttribute('data-sort-asc', asc);
+
+        // Mettre à jour les indicateurs de tri
+        updateSortIndicators(table);
+    };
+
+    // Mise à jour des indicateurs visuels de tri
+    const updateSortIndicators = (table) => {
+        const headers = table.querySelectorAll('th.sortable');
+        const sortColumn = parseInt(table.getAttribute('data-sort-column'));
+        const sortAsc = table.getAttribute('data-sort-asc') === 'true';
+
+        headers.forEach((header, index) => {
+            // Supprimer tous les indicateurs existants
+            const icons = header.querySelectorAll('i');
+            icons.forEach(icon => {
+                icon.classList.remove('fa-sort-up', 'fa-sort-down', 'active-sort');
+                icon.classList.add('fa-sort');
+            });
+
+            // Ajouter l'indicateur approprié à la colonne triée
+            if (index === sortColumn) {
+                const icon = header.querySelector('i');
+                icon.classList.remove('fa-sort');
+                icon.classList.add(sortAsc ? 'fa-sort-up' : 'fa-sort-down', 'active-sort');
+            }
+        });
+    };
+
+    // Initialiser le tri pour la table de sécurité
+    const securityTable = document.getElementById('security-table');
+    if (securityTable) {
+        // Ajouter des attributs de données pour suivre l'état de tri
+        securityTable.setAttribute('data-sort-column', '5'); // Trier par date par défaut
+        securityTable.setAttribute('data-sort-asc', 'false'); // Ordre descendant (plus récent d'abord)
+
+        // Appliquer le tri initial
+        sortTable(securityTable, 5, false);
+
+        // Ajouter des écouteurs d'événements pour les en-têtes triables
+        const headers = securityTable.querySelectorAll('th.sortable');
+        headers.forEach((header, index) => {
+            header.addEventListener('click', () => {
+                const currentSortColumn = parseInt(securityTable.getAttribute('data-sort-column'));
+                const currentSortAsc = securityTable.getAttribute('data-sort-asc') === 'true';
+
+                // Si on clique sur la même colonne, inverser l'ordre
+                // Sinon, trier la nouvelle colonne en ordre ascendant
+                const newSortAsc = (index === currentSortColumn) ? !currentSortAsc : true;
+
+                sortTable(securityTable, index, newSortAsc);
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

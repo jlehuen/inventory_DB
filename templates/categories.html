@@ -1,0 +1,21 @@
+<!-- templates/categories.html -->
+{% extends 'base.html' %}
+
+{% block title %}Catégories - Catalogue d'Instruments{% endblock %}
+
+{% block content %}
+<section class="categories-section">
+    <h1>Catégories d'objets ou de dispositifs</h1>
+
+    <div class="categories-grid">
+        {% for cat in categories %}
+        <a href="{{ url_for('objets_par_categorie', categorie=cat['categorie']) }}" class="categorie-card">
+            <div class="categorie-icon">
+                <i class="fas {{ cat['icon'] }}"></i>
+            </div>
+            <h2>{{ cat['categorie'] }}</h2>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

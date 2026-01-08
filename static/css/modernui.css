@@ -1,0 +1,498 @@
+/* modern-ui.css - Améliorations esthétiques pour le catalogue CCNM */
+
+:root {
+    /* Nouvelle palette de couleurs moderne */
+    --primary-color: #1a4b84;       /* Bleu profond */
+    --secondary-color: #2e86de;     /* Bleu vif */
+    --accent-color: #e74c3c;        /* Rouge vif (inchangé) */
+    --light-color: #f5f7fa;         /* Gris très clair */
+    --dark-color: #2c3e50;          /* Bleu foncé (inchangé) */
+    --text-color: #34495e;          /* Gris bleuté pour le texte */
+    --success-color: #27ae60;       /* Vert */
+    --warning-color: #f39c12;       /* Orange */
+    --danger-color: #e74c3c;        /* Rouge (inchangé) */
+    --border-radius: 6px;           /* Bordures légèrement plus arrondies */
+    --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); /* Ombre plus subtile */
+    --transition-speed: 0.3s;       /* Vitesse standard des transitions */
+}
+
+/* Améliorations générales */
+body {
+    color: var(--text-color);
+    background-color: #f8f9fa;
+    line-height: 1.7;
+}
+
+a {
+    transition: color var(--transition-speed), transform var(--transition-speed);
+}
+
+a:hover {
+    text-decoration: none;
+}
+
+/* Typographie améliorée */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--primary-color);
+    margin-bottom: 0.8rem;
+    font-weight: 600;
+}
+
+/* Animations et transitions */
+.btn, .btn-small, .objet-card, .categorie-card {
+    transition: all var(--transition-speed) ease;
+}
+
+.btn:hover, .btn-small:hover {
+    transform: translateY(-2px);
+}
+
+/* Amélioration du header */
+header {
+    background: linear-gradient(135deg, var(--primary-color), var(--dark-color));
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.logo h1 {
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+nav ul li a {
+    position: relative;
+    padding: 5px 0;
+}
+
+nav ul li a:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--secondary-color);
+    transition: width var(--transition-speed);
+}
+
+nav ul li a:hover:after {
+    width: 100%;
+}
+
+/* Amélioration des formulaires */
+input[type="text"],
+input[type="url"],
+input[type="password"],
+textarea,
+select {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    transition: border var(--transition-speed);
+}
+
+input[type="text"]:focus,
+input[type="url"]:focus,
+input[type="password"]:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(46, 134, 222, 0.2);
+    outline: none;
+}
+
+.form-group {
+    margin-bottom: 1.8rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+/* Boutons améliorés */
+.btn {
+    padding: 0.7rem 1.5rem;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn.primary {
+    background-color: var(--secondary-color);
+    border: none;
+}
+
+.btn.primary:hover {
+    background-color: #2876c0;
+}
+
+.btn.secondary {
+    background-color: #95a5a6;
+}
+
+.btn.danger {
+    background-color: var(--danger-color);
+}
+
+.btn-small {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Cartes d'objets */
+.objet-card {
+    box-shadow: var(--box-shadow);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.objet-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.objet-image {
+    height: 200px; /* Légèrement plus grand */
+    background-size: cover;
+    background-position: center;
+    transition: opacity var(--transition-speed);
+}
+
+.objet-info {
+    padding: 1.2rem;
+}
+
+.objet-info h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+
+.objet-categorie, .objet-fabricant {
+    font-size: 0.95rem;
+    color: #666;
+}
+
+/* Cartes de catégories */
+.categories-grid {
+    gap: 2rem;
+}
+
+.categorie-card {
+    padding: 2rem;
+    border-radius: 8px;
+    transition: all var(--transition-speed);
+}
+
+.categorie-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    background-color: var(--light-color);
+}
+
+.categorie-icon {
+    font-size: 2.5rem;
+    color: var(--secondary-color);
+    margin-bottom: 1.2rem;
+    transition: transform var(--transition-speed);
+}
+
+.categorie-card:hover .categorie-icon {
+    transform: scale(1.2);
+}
+
+/* Détail de l'objet */
+.objet-detail {
+    border-radius: 8px;
+    box-shadow: var(--box-shadow);
+    padding: 2.5rem;
+}
+
+.objet-detail-header h1 {
+    color: var(--primary-color);
+    font-size: 2.2rem;
+}
+
+.image-principale-container {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.image-principale-container img {
+    transition: transform var(--transition-speed);
+}
+
+.image-principale-container:hover img {
+    transform: scale(1.05);
+}
+
+.thumbnail {
+    transition: all var(--transition-speed);
+    border-radius: 8px;
+}
+
+.thumbnail:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.thumbnail.active {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(46, 134, 222, 0.3);
+}
+
+.info-section h2 {
+    color: var(--secondary-color);
+    font-size: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--light-color);
+    margin-bottom: 1rem;
+}
+
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.info-table th, .info-table td {
+    padding: 0.8rem;
+    border-bottom: 1px solid #eee;
+}
+
+.info-table th {
+    color: var(--primary-color);
+    width: 35%;
+    font-weight: 600;
+}
+
+/* Tables d'administration */
+.admin-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--box-shadow);
+}
+
+.admin-table th {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    padding: 1rem;
+}
+
+.admin-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.admin-table tr:hover {
+    background-color: rgba(46, 134, 222, 0.05);
+}
+
+.sortable-table th.sortable:hover {
+    background-color: var(--secondary-color);
+    cursor: pointer;
+}
+
+.admin-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+/* Flash messages */
+.flash {
+    padding: 1rem 1.5rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid var(--secondary-color);
+    animation: slideDown 0.5s ease;
+}
+
+.flash-success {
+    background-color: #d4edda;
+    color: #155724;
+    border-left-color: var(--success-color);
+}
+
+.flash-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-left-color: var(--danger-color);
+}
+
+.flash-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border-left-color: var(--warning-color);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Footer amélioré */
+footer {
+    background: linear-gradient(135deg, var(--dark-color), var(--primary-color));
+    color: white;
+    padding: 3rem 1.5rem;
+    margin-top: 4rem;
+}
+
+.footer-section h3 {
+    color: white;
+    margin-bottom: 1.2rem;
+    font-size: 1.3rem;
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+
+.footer-section h3:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 50px;
+    height: 2px;
+    background-color: var(--secondary-color);
+}
+
+.footer-section a {
+    color: rgba(255, 255, 255, 0.8);
+    transition: all var(--transition-speed);
+}
+
+.footer-section a:hover {
+    color: white;
+    transform: translateX(5px);
+}
+
+.copyright {
+    text-align: center;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    opacity: 0.7;
+    font-size: 0.9rem;
+}
+
+/* Animation de chargement */
+.loading {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(46, 134, 222, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--secondary-color);
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Formulaire de connexion */
+.login-container {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    background: linear-gradient(to bottom right, white, #f8f9fa);
+    padding: 2.5rem;
+    max-width: 450px;
+}
+
+.login-container h1 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--primary-color);
+    font-size: 1.8rem;
+}
+
+.login-form .form-control {
+    height: 50px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    padding: 10px 15px;
+}
+
+.login-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.login-form .btn {
+    height: 50px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+/* Page d'erreur stylisée */
+.error-container {
+    min-height: 70vh;
+}
+
+.error-content {
+    padding: 4rem;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    max-width: 700px;
+}
+
+.error-content h1 {
+    font-size: 8rem;
+    color: var(--accent-color);
+    opacity: 0.8;
+    margin: 0;
+    line-height: 1;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.error-content h2 {
+    font-size: 2.2rem;
+    margin: 1rem 0 1.5rem;
+    color: var(--primary-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .objet-detail-content {
+        grid-template-columns: 1fr;
+    }
+
+    .header-top {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .logo {
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .hero p {
+        font-size: 1.1rem;
+    }
+
+    .admin-header {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+}

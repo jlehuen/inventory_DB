@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+.pytest_cache/
+
+# Mac OS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Environnement et Secrets (TRES IMPORTANT)
+.env
+instance/
+.secret
+
+# Base de données
+database/database.db
+*.sqlite3
+
+# Contenu utilisateur (Uploads)
+# On ignore tout le contenu sauf le fichier .gitkeep pour garder le dossier
+database/uploads/*
+!database/uploads/.gitkeep
+
+# Sauvegardes
+backups/*
+!backups/.gitkeep
+
+# Logs
+logs/*
+!logs/.gitkeep
+*.log
+
+# Fichiers temporaires ou générés
+utils/sync_categories.log

@@ -1,0 +1,155 @@
+<!-- templates/admin/nettoyage.html -->
+{% extends 'base.html' %}
+
+{% block title %}Nettoyage des fichiers - Gestion de la collection{% endblock %}
+
+{% block content %}
+<section class="admin-form-section">
+    <h1>Nettoyage des fichiers inutilisés</h1>
+
+    <div class="admin-content">
+        <p>Cette fonction permet de supprimer les fichiers images qui ne sont pas référencés dans la base de données.</p>
+        <p>Ces fichiers peuvent être le résultat d'opérations incomplètes ou d'anciennes images remplacées.</p>
+
+        <div class="warning-box">
+            <p><strong>Attention :</strong> Cette opération est irréversible. Les fichiers supprimés ne pourront pas être récupérés.</p>
+        </div>
+
+        {% if resultats %}
+            <div class="rapport-box">
+                <h2>Rapport détaillé</h2>
+
+                <div class="rapport-section">
+                    <h3>Fichiers dans le dossier ({{ resultats.fichiers_dans_dossier|length }})</h3>
+                    <ul>
+                        {% for fichier in resultats.fichiers_dans_dossier %}
+                            <li>{{ fichier }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="rapport-section">
+                    <h3>Images référencées en base ({{ resultats.images_referencees_db|length }})</h3>
+                    <ul>
+                        {% for fichier in resultats.images_referencees_db %}
+                            <li>{{ fichier }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="rapport-section">
+                    <h3>Images orphelines détectées ({{ resultats.orphelins_detectes|length }})</h3>
+                    <ul>
+                        {% for fichier in resultats.orphelins_detectes %}
+                            <li>{{ fichier }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                {% if resultats.fichiers_supprimes %}
+                    <div class="rapport-section">
+                        <h3>Fichiers supprimés ({{ resultats.fichiers_supprimes|length }})</h3>
+                        <ul>
+                            {% for fichier in resultats.fichiers_supprimes %}
+                                <li>{{ fichier }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                {% if resultats.erreurs %}
+                    <div class="rapport-section error">
+                        <h3>Erreurs ({{ resultats.erreurs|length }})</h3>
+                        <ul>
+                            {% for erreur in resultats.erreurs %}
+                                <li>{{ erreur }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <form method="post" action="{{ url_for('admin_post_nettoyage') }}" class="admin-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer les fichiers inutilisés ?');">
+                    <i class="fas fa-trash"></i> Nettoyer les fichiers
+                </button>
+                <a href="{{ url_for('collection') }}" class="btn secondary"><i class="fas fa-times"></i> Annuler</a>
+            </form>
+        </div>
+    </div>
+</section>
+
+<style>
+.warning-box {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin: 1.5rem 0;
+}
+
+.rapport-box {
+    background-color: #f8f9fa;
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin: 1.5rem 0;
+    border: 1px solid #e9ecef;
+}
+
+.rapport-section {
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 1rem;
+}
+
+.rapport-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.rapport-section h3 {
+    margin-bottom: 0.5rem;
+    color: var(--secondary-color);
+}
+
+.rapport-section ul {
+    max-height: 200px;
+    overflow-y: auto;
+    padding-left: 1.5rem;
+}
+
+.rapport-section.error {
+    background-color: #f8d7da;
+    border-radius: var(--border-radius);
+    padding: 0.5rem 1rem;
+}
+
+.rapport-section.error h3 {
+    color: #721c24;
+}
+
+.btn.danger {
+    background-color: var(--accent-color);
+}
+
+.btn.danger:hover {
+    background-color: #c0392b;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.form-actions form {
+    display: flex;
+    gap: 1rem;
+    margin: 0;
+}
+</style>
+{% endblock %}

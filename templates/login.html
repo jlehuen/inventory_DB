@@ -1,0 +1,111 @@
+<!-- templates/login.html -->
+{% extends 'base.html' %}
+
+{% block title %}Connexion - Administration CCNM{% endblock %}
+
+{% block content %}
+<section class="login-section">
+    <div class="login-container">
+        <h1>Connexion à l'administration</h1>
+
+        {% for message in get_flashed_messages() %}
+            <div class="flash-message">{{ message }}</div>
+        {% endfor %}
+
+        <form method="post" class="login-form">
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                <label for="username">Nom d'utilisateur</label>
+                {{ form.username(class="form-control", autofocus=true) }}
+                {% if form.username.errors %}
+                    <div class="form-error">
+                        {% for error in form.username.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="password">Mot de passe</label>
+                {{ form.password(class="form-control") }}
+                {% if form.password.errors %}
+                    <div class="form-error">
+                        {% for error in form.password.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-actions">
+                {{ form.submit(class="btn primary") }}
+                <a href="{{ url_for('index') }}" class="btn secondary">Retour à l'accueil</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+<style>
+    .login-section {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 60vh;
+    }
+
+    .login-container {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        padding: 2rem;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .login-container h1 {
+        margin-bottom: 1.5rem;
+        text-align: center;
+        color: var(--primary-color);
+    }
+
+    .flash-message {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 1rem;
+        border-radius: var(--border-radius);
+    }
+
+    .login-form .form-group {
+        margin-bottom: 1.2rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.7rem;
+        border: 1px solid #ddd;
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+    }
+
+    .form-error {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .login-form .form-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+
+    .login-form button, .login-form .btn {
+        width: 100%;
+        text-align: center;
+    }
+</style>
+{% endblock %}

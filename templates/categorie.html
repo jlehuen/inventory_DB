@@ -1,0 +1,51 @@
+<!-- templates/categorie.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ categorie }} - Catalogue d'Instruments{% endblock %}
+
+{% block content %}
+<section class="categorie-objets">
+    <h1>{{ categorie }}</h1>
+
+    {% if description %}
+    <div class="categorie-description">
+        <p>{{ description }}</p>
+    </div>
+    {% endif %}
+
+    <br/>
+    <div class="objets-grid">
+        {% for objet in objets %}
+        <div class="objet-card">
+            <a href="{{ url_for('detail_objet', id=objet['id']) }}">
+                {% if objet['image_principale'] %}
+                <div class="objet-image" style="background-image: url('{{ url_for('static', filename=objet['image_principale']) }}')"></div>
+                {% else %}
+                <div class="objet-image default-image"></div>
+                {% endif %}
+                <div class="objet-info">
+                    <h3>{{ objet['nom'] }}</h3>
+                    <p class="objet-fabricant">{{ objet['fabricant'] }}</p>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <br/>
+    <div class="categorie-nav">
+        <a href="{{ url_for('categories') }}" class="btn"><i class="fas fa-arrow-left"></i> Retour aux catégories</a>
+    </div>
+</section>
+
+<style>
+    .categorie-description {
+        background-color: rgba(52, 152, 219, 0.1);
+        border-left: 4px solid var(--secondary-color);
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: 0 var(--border-radius) var(--border-radius) 0;
+        line-height: 1.6;
+    }
+</style>
+{% endblock %}

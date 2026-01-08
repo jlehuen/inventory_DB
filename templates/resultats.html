@@ -1,0 +1,41 @@
+<!-- templates/resultats.html -->
+{% extends 'base.html' %}
+
+{% block title %}Résultats de recherche - Catalogue d'Instruments{% endblock %}
+
+{% block content %}
+<section class="resultats-section">
+    <h1>Résultats de la recherche pour "{{ query }}"</h1>
+    <br/>
+
+    {% if objets %}
+    <div class="objets-grid">
+        {% for objet in objets %}
+        <div class="objet-card">
+            <a href="{{ url_for('detail_objet', id=objet['id']) }}">
+                {% if objet['image_principale'] %}
+                <div class="objet-image" style="background-image: url('{{ url_for('static', filename=objet['image_principale']) }}')"></div>
+                {% else %}
+                <div class="objet-image default-image"></div>
+                {% endif %}
+                <div class="objet-info">
+                    <h3>{{ objet['nom'] }}</h3>
+                    <p class="objet-categorie">{{ objet['categorie'] }}</p>
+                    <p class="objet-fabricant">{{ objet['fabricant'] }}</p>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-results">
+        <p>Aucun résultat trouvé pour "{{ query }}".</p>
+    </div>
+    {% endif %}
+
+    <br/>
+    <div class="resultats-nav">
+        <a href="{{ url_for('index') }}" class="btn"><i class="fas fa-arrow-left"></i> Retour à l'accueil</a>
+    </div>
+</section>
+{% endblock %}

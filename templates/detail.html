@@ -1,0 +1,160 @@
+<!-- templates/detail.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ objet['nom'] }} - Catalogue d'Instruments{% endblock %}
+
+{% block content %}
+<section class="objet-detail">
+    <div class="objet-detail-header">
+        <h1>{{ objet['nom'] }}</h1>
+        <p class="objet-categorie">Catégorie: <a href="{{ url_for('objets_par_categorie', categorie=objet['categorie']) }}">{{ objet['categorie'] }}</a></p>
+    </div>
+
+    <div class="objet-detail-content">
+        <div class="objet-detail-images">
+            <!-- Galerie d'images avec image principale et images supplémentaires -->
+            <div class="image-principale-container">
+                {% if objet['image_principale'] %}
+                <img id="image-principale" src="{{ url_for('static', filename=objet['image_principale']) }}" alt="{{ objet['nom'] }}">
+                {% else %}
+                <div class="default-image large"></div>
+                {% endif %}
+            </div>
+
+            {% if images|length > 0 or objet['image_principale'] %}
+            <div class="image-thumbnails">
+                {% if objet['image_principale'] %}
+                <div class="thumbnail active" onclick="changeMainImage('{{ url_for('static', filename=objet['image_principale']) }}', this)">
+                    <img src="{{ url_for('static', filename=objet['image_principale']) }}" alt="Image principale">
+                </div>
+                {% endif %}
+
+                {% for image in images %}
+                <div class="thumbnail" onclick="changeMainImage('{{ url_for('static', filename=image['chemin']) }}', this)">
+                    <img src="{{ url_for('static', filename=image['chemin']) }}" alt="{{ image['legende'] or 'Image ' ~ loop.index }}">
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="objet-detail-info">
+            <!-- Section Description - Toujours affichée -->
+            <div class="info-section">
+                <h2>Description</h2>
+                {% if objet['description'] and objet['description'].strip() %}
+                    <p>{{ objet['description'] }}</p>
+                {% else %}
+                    <p><em>Aucune description disponible pour cet objet.</em></p>
+                {% endif %}
+            </div>
+
+            <div class="info-section">
+                <h2>Données générales</h2>
+                <table class="info-table">
+                    <tr>
+                        <th>{% if objet['categorie'] == 'Livre' %}Titre{% else %}Modèle{% endif %} :</th>
+                        <td>{{ objet['nom'] }}</td>
+                    </tr>
+                    <tr>
+                        <th>{% if objet['categorie'] == 'Livre' %}Éditeur{% else %}Fabricant{% endif %} :</th>
+                        <td>{{ objet['fabricant'] or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Année de sortie :</th>
+                        <td>{{ objet['date_fabrication'] or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Informations :</th>
+                        <td>
+                            {% if objet['url'] %}
+                            <a href="{{ objet['url'] }}" target="_blank" class="url-link">
+                                {{ objet['url'] }}
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>État de l'objet :</th>
+                        <td>{{ objet['etat'] or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Numéro d'inventaire :</th>
+                        <td>{{ objet['numero_inventaire'] or '-' }}</td>
+                    </tr>
+
+                    <tr>
+                        <th>Date d'inventaire :</th>
+                        <td>{{ objet['date_ajout'] }}</td>
+                    </tr>
+                    {% if objet['date_modification'] and objet['date_modification']|length > 0 %}
+                    <tr>
+                        <th>Fiche modifiée le :</th>
+                        <td>{{ objet['date_modification'] }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+
+            {% if objet['attributs_specifiques'] %}
+            <div class="info-section">
+                <h2>Caractéristiques spécifiques</h2>
+                <table class="info-table">
+                    {% set attrs = objet['attributs_specifiques']|from_json %}
+                    {% set ordered_attrs = [] %}
+
+                    {# Préparer une liste d'attributs avec leurs ordres #}
+                    {% for cle, details in attrs.items() %}
+                        {% if not cle.startswith('ordre_') %}  {# Ignorer les attributs d'ordre #}
+                            {% if details is mapping and details.valeur is defined %}
+                                {% set _ = ordered_attrs.append((cle, details.valeur, details.ordre|default(999), details.label|default(cle|replace('_', ' ')|title))) %}
+                            {% else %}
+                                {# Pour les anciens formats sans ordre #}
+                                {% set _ = ordered_attrs.append((cle, details, 999, cle|replace('_', ' ')|title)) %}
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {# Trier par l'ordre #}
+                    {% for cle, valeur, _, label in ordered_attrs|sort(attribute='2') %}
+                        <tr>
+                            <th>{{ label }} :</th>
+                            <td>{{ valeur }}</td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="objet-nav">
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('collection') }}" class="btn"><i class="fas fa-arrow-left"></i> Retour à la liste</a>
+            <a href="{{ url_for('modifier_objet', id=objet['id']) }}" class="btn primary"><i class="fas fa-edit"></i> Editer la fiche</a>
+        {% else %}
+            <a href="{{ url_for('collection') }}" class="btn"><i class="fas fa-arrow-left"></i> Retour à la liste</a>
+        {% endif %}
+        <a href="{{ url_for('generate_pdf', id=objet['id']) }}" class="btn primary" target="_blank">
+            <i class="fas fa-file-pdf"></i> Télécharger PDF
+        </a>
+    </div>
+</section>
+
+<script>
+function changeMainImage(src, element) {
+    document.getElementById('image-principale').src = src;
+
+    // Mettre à jour la classe active sur les miniatures
+    var thumbnails = document.querySelectorAll('.thumbnail');
+    thumbnails.forEach(function(thumb) {
+        thumb.classList.remove('active');
+    });
+    element.classList.add('active');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,40 @@
+-- schema.sql - Structure de la base de données optimisée
+
+DROP TABLE IF EXISTS images;
+DROP TABLE IF EXISTS objets;
+DROP TABLE IF EXISTS login_attempts;
+
+CREATE TABLE objets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom TEXT NOT NULL,
+    description TEXT,
+    categorie TEXT,
+    fabricant TEXT,
+    date_fabrication TEXT,
+    url TEXT,
+    numero_inventaire TEXT,
+    image_principale TEXT,
+    etat TEXT,
+    date_ajout TEXT NOT NULL,
+    date_modification TEXT DEFAULT NULL,
+    attributs_specifiques TEXT
+);
+
+CREATE TABLE images (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    objet_id INTEGER NOT NULL,
+    chemin TEXT NOT NULL,
+    legende TEXT,
+    ordre INTEGER DEFAULT 0,
+    FOREIGN KEY (objet_id) REFERENCES objets (id) ON DELETE CASCADE
+);
+
+CREATE TABLE login_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    ip_address TEXT NOT NULL,
+    attempts INTEGER DEFAULT 1,
+    locked_until TIMESTAMP,
+    last_attempt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(username, ip_address)
+);

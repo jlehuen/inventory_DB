@@ -1,0 +1,141 @@
+<!-- templates/collection.html -->
+{% extends 'base.html' %}
+
+{% block title %}Collection complète - CCNM{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    {% if current_user.is_authenticated %}
+    <h1>Administration de la collection</h1>
+    {% else %}
+    <h1>Collection complète</h1>
+    {% endif %}
+    <br/>
+
+    {% if current_user.is_authenticated %}
+    <div class="admin-header">
+        <a href="{{ url_for('ajouter_objet') }}" class="btn"><i class="fas fa-plus"></i> Ajouter un objet</a>
+        <a href="{{ url_for('nettoyer_fichiers') }}" class="btn secondary"><i class="fas fa-broom"></i> Nettoyer les fichiers</a>
+    </div>
+    {% endif %}
+
+    <div class="admin-content">
+        <table class="admin-table sortable-table" id="collection-table">
+            <thead>
+                <tr>
+                    <th class="sortable" data-sort="nom">Nom <i class="fas fa-sort"></i></th>
+                    <th class="sortable" data-sort="fabricant">Fabricant <i class="fas fa-sort"></i></th>
+                    <th class="sortable" data-sort="categorie">Catégorie <i class="fas fa-sort"></i></th>
+                    <th class="sortable" data-sort="date_fabrication">Année de sortie <i class="fas fa-sort"></i></th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for objet in objets %}
+                <tr>
+                    <td>{{ objet['nom'] }}</td>
+                    <td>{{ objet['fabricant'] or '-' }}</td>
+                    <td>{{ objet['categorie'] or '-' }}</td>
+                    <td>{{ objet['date_fabrication'] or '-' }}</td>
+                    <td class="actions">
+                        <a href="{{ url_for('detail_objet', id=objet['id']) }}" class="btn-small" title="Voir les détails"><i class="fas fa-eye"></i></a>
+                        <a href="{{ url_for('generate_pdf', id=objet['id']) }}" class="btn-small" target="_blank" title="Télécharger PDF"><i class="fas fa-file-pdf"></i></a>
+                        {% if current_user.is_authenticated %}
+                            <a href="{{ url_for('modifier_objet', id=objet['id']) }}" class="btn-small" title="Modifier la fiche"><i class="fas fa-edit"></i></a>
+                            <form action="{{ url_for('supprimer_objet', id=objet['id']) }}" method="post" class="inline-form" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet objet ?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn-small danger"><i class="fas fa-trash"></i></button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fonction pour trier le tableau
+    const sortTable = (table, column, asc = true) => {
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+
+        // Tri des lignes
+        const sortedRows = rows.sort((a, b) => {
+            const aCol = a.cells[column].textContent.trim();
+            const bCol = b.cells[column].textContent.trim();
+
+            // Gérer les valeurs numériques vs textuelles
+            if (!isNaN(aCol) && !isNaN(bCol)) {
+                return asc ? Number(aCol) - Number(bCol) : Number(bCol) - Number(aCol);
+            } else {
+                return asc ? aCol.localeCompare(bCol) : bCol.localeCompare(aCol);
+            }
+        });
+
+        // Supprimer les lignes actuelles
+        while (tbody.firstChild) {
+            tbody.removeChild(tbody.firstChild);
+        }
+
+        // Ajouter les lignes triées
+        tbody.append(...sortedRows);
+
+        // Mettre à jour l'état de tri du tableau
+        table.setAttribute('data-sort-column', column);
+        table.setAttribute('data-sort-asc', asc);
+
+        // Mettre à jour les indicateurs de tri
+        updateSortIndicators(table);
+    };
+
+    // Mise à jour des indicateurs visuels de tri
+    const updateSortIndicators = (table) => {
+        const headers = table.querySelectorAll('th.sortable');
+        const sortColumn = parseInt(table.getAttribute('data-sort-column'));
+        const sortAsc = table.getAttribute('data-sort-asc') === 'true';
+
+        headers.forEach((header, index) => {
+            // Supprimer tous les indicateurs existants
+            const icons = header.querySelectorAll('i');
+            icons.forEach(icon => {
+                icon.classList.remove('fa-sort-up', 'fa-sort-down', 'active-sort');
+                icon.classList.add('fa-sort');
+            });
+
+            // Ajouter l'indicateur approprié à la colonne triée
+            if (index === sortColumn) {
+                const icon = header.querySelector('i');
+                icon.classList.remove('fa-sort');
+                icon.classList.add(sortAsc ? 'fa-sort-up' : 'fa-sort-down', 'active-sort');
+            }
+        });
+    };
+
+    // Sélectionner le tableau et initialiser les événements
+    const table = document.getElementById('collection-table');
+    if (table) {
+        // Ajouter des attributs de données pour suivre l'état de tri
+        table.setAttribute('data-sort-column', '0'); // Nom par défaut
+        table.setAttribute('data-sort-asc', 'true');
+
+        // Ajouter des écouteurs d'événements pour les en-têtes triables
+        const headers = table.querySelectorAll('th.sortable');
+        headers.forEach((header, index) => {
+            header.addEventListener('click', () => {
+                const currentSortColumn = parseInt(table.getAttribute('data-sort-column'));
+                const currentSortAsc = table.getAttribute('data-sort-asc') === 'true';
+
+                // Si on clique sur la même colonne, inverser l'ordre
+                // Sinon, trier la nouvelle colonne en ordre ascendant
+                const newSortAsc = (index === currentSortColumn) ? !currentSortAsc : true;
+
+                sortTable(table, index, newSortAsc);
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
