@@ -1,3 +1,10 @@
+"""
+Module de génération de PDF.
+
+Ce module fournit les fonctionnalités nécessaires pour générer des fiches d'objets
+au format PDF en utilisant la bibliothèque ReportLab.
+"""
+
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle

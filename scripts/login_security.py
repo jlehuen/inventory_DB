@@ -1,5 +1,9 @@
-# scripts/login_security.py
-# Module de sécurité pour la gestion des tentatives de connexion (version BD)
+"""
+Module de sécurité pour la gestion des tentatives de connexion (version BD).
+
+Ce module gère le suivi des tentatives de connexion, le blocage temporaire
+des utilisateurs après trop d'échecs, et le nettoyage des logs anciens.
+"""
 
 from datetime import datetime, timedelta
 import logging

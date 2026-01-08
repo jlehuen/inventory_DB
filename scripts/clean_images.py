@@ -1,3 +1,10 @@
+"""
+Module de nettoyage des images orphelines.
+
+Ce module permet d'identifier et de supprimer les fichiers images présents dans
+le dossier d'uploads mais qui ne sont plus référencés dans la base de données.
+"""
+
 import os
 
 def nettoyer_fichiers(app, get_db_connection, allowed_extensions):

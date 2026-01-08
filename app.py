@@ -1,4 +1,9 @@
-# app.py - Application Flask principale avec authentification
+"""
+Application Flask principale pour l'inventaire du CCNM.
+
+Ce module contient la configuration de l'application, les modèles de données,
+les routes et la logique métier pour la gestion de l'inventaire.
+"""
 
 import os
 import json
@@ -61,8 +66,9 @@ app.logger.setLevel(logging.INFO)
 # Extension de fichiers autorisées
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-# Classe User pour l'authentification
 class User:
+    """Modèle utilisateur pour l'authentification Flask-Login."""
+
     def __init__(self, id, username, password_hash):
         self.id = id
         self.username = username
@@ -72,6 +78,7 @@ class User:
         self.is_anonymous = False
 
     def get_id(self):
+        """Retourne l'identifiant unique de l'utilisateur sous forme de chaîne."""
         return str(self.id)
 
     @staticmethod
@@ -100,8 +107,9 @@ class User:
         """Vérifie si le mot de passe correspond au hash stocké"""
         return check_password_hash(self.password_hash, password)
 
-# Classe de formulaire pour la connexion
 class LoginForm(FlaskForm):
+    """Formulaire de connexion utilisateur."""
+
     username = StringField('Nom d\'utilisateur', validators=[DataRequired()])
     password = PasswordField('Mot de passe', validators=[DataRequired()])
     submit = SubmitField('Connexion')
@@ -113,6 +121,7 @@ login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
+    """Charge un utilisateur à partir de son ID pour Flask-Login."""
     return User.get(int(user_id), get_db_connection)
 
 # Fonction pour charger le fichier des attributs spécifiques
@@ -148,9 +157,9 @@ def get_categories_info():
         app.logger.error(f"Erreur lors du chargement des informations de catégories: {e}")
         return {}  # Retourner un dictionnaire vide en cas d'erreur
 
-# Filtre Jinja pour convertir les chaînes JSON en dictionnaires Python
 @app.template_filter('from_json')
 def from_json(value):
+    """Filtre Jinja pour convertir une chaîne JSON en dictionnaire Python."""
     try:
         if value:
             return json.loads(value)
@@ -159,14 +168,17 @@ def from_json(value):
         return {}
 
 def allowed_file(filename):
+    """Vérifie si l'extension du fichier est autorisée."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_db_connection():
+    """Établit et retourne une connexion à la base de données SQLite."""
     conn = sqlite3.connect('database/database.db')
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
+    """Initialise la base de données avec le schéma SQL."""
     conn = get_db_connection()
     with open('static/schema.sql') as f:
         conn.executescript(f.read())
@@ -426,6 +438,7 @@ def numero_inventaire_existe(numero, exclude_id=None):
 # Routes d'authentification
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """Gère la connexion des utilisateurs."""
     # Rediriger si l'utilisateur est déjà connecté
     if current_user.is_authenticated:
         return redirect(url_for('collection'))
@@ -475,6 +488,7 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
+    """Gère la déconnexion des utilisateurs."""
     # Journaliser la déconnexion
     if current_user.is_authenticated:
         log_auth_attempt(current_user.id, 'logout', request)
@@ -487,6 +501,7 @@ def logout():
 # Routes de l'application
 @app.route('/')
 def index():
+    """Affiche la page d'accueil avec les derniers objets ajoutés."""
     conn = get_db_connection()
     objets = conn.execute('SELECT * FROM objets ORDER BY date_ajout DESC').fetchall()
     conn.close()
@@ -495,10 +510,12 @@ def index():
 # Route pour servir les fichiers depuis database/uploads
 @app.route('/static/database/uploads/<path:filename>')
 def serve_upload(filename):
+    """Sert les fichiers uploadés (images) depuis le dossier sécurisé."""
     return send_from_directory('database/uploads', filename)
 
 @app.route('/objet/<int:id>')
 def detail_objet(id):
+    """Affiche la page de détail d'un objet spécifique."""
     conn = get_db_connection()
 
     # Récupérer les informations de l'objet
@@ -523,6 +540,7 @@ def detail_objet(id):
 
 @app.route('/recherche')
 def recherche():
+    """Effectue une recherche textuelle sur les objets et leurs attributs."""
     query = request.args.get('q', '')
     if not query:
         return redirect(url_for('index'))
@@ -595,6 +613,7 @@ def recherche():
 
 @app.route('/categories')
 def categories():
+    """Affiche la liste de toutes les catégories disponibles."""
     # Obtenir les informations de catégories depuis le fichier JSON
     json_categories_info = get_categories_info()
     json_categories = list(json_categories_info.keys())
@@ -634,6 +653,7 @@ def categories():
 
 @app.route('/categorie/<categorie>')
 def objets_par_categorie(categorie):
+    """Affiche les objets appartenant à une catégorie spécifique."""
     conn = get_db_connection()
     objets = conn.execute('SELECT * FROM objets WHERE categorie = ?', (categorie,)).fetchall()
     conn.close()
@@ -668,6 +688,7 @@ def admin():
 @app.route('/admin/ajouter', methods=('GET', 'POST'))
 @login_required
 def ajouter_objet():
+    """Gère l'ajout d'un nouvel objet dans l'inventaire."""
     if request.method == 'POST':
         nom = request.form['nom']
         description = request.form['description']
@@ -782,6 +803,7 @@ def ajouter_objet():
 @app.route('/admin/modifier/<int:id>', methods=('GET', 'POST'))
 @login_required
 def modifier_objet(id):
+    """Gère la modification d'un objet existant."""
     conn = get_db_connection()
     objet = conn.execute('SELECT * FROM objets WHERE id = ?', (id,)).fetchone()
 
@@ -957,6 +979,7 @@ def modifier_objet(id):
 @app.route('/admin/supprimer/<int:id>', methods=('POST',))
 @login_required
 def supprimer_objet(id):
+    """Gère la suppression d'un objet et de ses ressources associées."""
     conn = get_db_connection()
     # Récupérer l'objet avant suppression pour la journalisation
     objet = conn.execute('SELECT nom FROM objets WHERE id = ?', (id,)).fetchone()
@@ -1008,6 +1031,7 @@ def admin_security():
 
 @app.route('/objet/<int:id>/pdf')
 def generate_pdf(id):
+    """Génère et sert le fichier PDF de la fiche de l'objet."""
     conn = get_db_connection()
 
     # Récupérer les informations de l'objet
@@ -1155,6 +1179,7 @@ def admin_post_nettoyage():
 
 # Ajout d'entêtes de sécurité
 def add_security_headers(response):
+    """Ajoute les en-têtes de sécurité HTTP à la réponse."""
     # Protection contre le clickjacking
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     # Protection XSS avancée
@@ -1170,11 +1195,13 @@ def add_security_headers(response):
 # Gestionnaire d'erreur 404
 @app.errorhandler(404)
 def page_not_found(e):
+    """Gère les erreurs 404 (Page non trouvée)."""
     return render_template('404.html'), 404
 
 # Gestionnaire d'erreur 500
 @app.errorhandler(500)
 def internal_error(e):
+    """Gère les erreurs 500 (Erreur interne du serveur)."""
     app.logger.error(f'Erreur 500: {str(e)}')
     return render_template('500.html'), 500
 

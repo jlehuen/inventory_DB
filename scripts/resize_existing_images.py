@@ -1,3 +1,10 @@
+"""
+Script de redimensionnement et d'optimisation des images existantes.
+
+Ce script parcourt le dossier des uploads et optimise les images qui n'ont pas
+été traitées lors de leur téléchargement initial.
+"""
+
 import os
 import logging
 from PIL import Image
@@ -43,6 +50,7 @@ def resize_and_optimize(filepath):
         return False
 
 def main():
+    """Fonction principale exécutant l'optimisation des images."""
     if not os.path.exists(UPLOAD_FOLDER):
         logger.error(f"Le dossier {UPLOAD_FOLDER} n'existe pas.")
         return
