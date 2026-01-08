@@ -31,6 +31,8 @@ Nous allons installer l'application dans `/var/www/inventaire_ccnm`.
 ```bash
 cd /var/www
 sudo git clone https://github.com/jlehuen/inventory_DB inventaire_ccnm
+# IMPORTANT : Réapproprier les fichiers à l'utilisateur courant pour pouvoir créer le venv et installer les dépendances
+sudo chown -R $USER:$USER inventaire_ccnm
 cd inventaire_ccnm
 ```
 *Note : Si vous n'utilisez pas Git sur le serveur, vous pouvez transférer les fichiers via SCP ou SFTP.*
@@ -177,6 +179,8 @@ Pour mettre à jour le code :
 ```bash
 cd /var/www/inventaire_ccnm
 sudo git pull origin main
+# Rétablir les permissions pour www-data (au cas où de nouveaux fichiers ont été créés par root)
+sudo chown -R www-data:www-data /var/www/inventaire_ccnm
 source venv/bin/activate
 pip install -r requirements.txt
 sudo systemctl restart inventaire
