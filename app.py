@@ -178,184 +178,66 @@ def get_db_connection():
     return conn
 
 def init_db():
-    """Initialise la base de données avec le schéma SQL."""
+    """Initialise la base de données avec le schéma SQL complet."""
     conn = get_db_connection()
     with open('static/schema.sql') as f:
         conn.executescript(f.read())
     conn.commit()
     conn.close()
-    app.logger.info('Base de données initialisée')
+    app.logger.info('Base de données initialisée avec le nouveau schéma')
 
-def init_security():
-    """Initialise la table de sécurité pour les tentatives de connexion"""
-    init_security_db(get_db_connection)
-    app.logger.info('Table de sécurité initialisée')
-
-def init_auth_db():
-    """Initialise la table des utilisateurs dans la base de données"""
-    conn = get_db_connection()
-    conn.execute('''
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    ''')
-
-    conn.execute('''
-    CREATE TABLE IF NOT EXISTS auth_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        action TEXT NOT NULL,
-        ip_address TEXT,
-        user_agent TEXT,
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users (id)
-    )
-    ''')
-
-    conn.commit()
-    conn.close()
-    app.logger.info('Tables d\'authentification initialisées')
+def log_auth_attempt(user_id, action, req):
+    """Enregistre une tentative d'authentification dans la base de données."""
+    try:
+        conn = get_db_connection()
+        ip_address = req.remote_addr
+        user_agent = req.user_agent.string if req.user_agent else None
+        
+        conn.execute(
+            'INSERT INTO auth_logs (user_id, action, ip_address, user_agent) VALUES (?, ?, ?, ?)',
+            (user_id, action, ip_address, user_agent)
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        app.logger.error(f"Erreur lors de l'enregistrement du log d'auth: {e}")
 
 def create_admin_user():
-    """
-    Gère la création ou la mise à jour de l'utilisateur administrateur.
-    Sécurité : Ne met à jour le mot de passe que si ADMIN_PASSWORD est défini dans le .env.
-    """
+    """Crée ou met à jour l'utilisateur administrateur par défaut."""
     admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
-    # On récupère explicitement None si la variable n'existe pas, pour distinguer du vide
-    env_password = os.environ.get('ADMIN_PASSWORD')
+    # On récupère la variable sans valeur par défaut pour distinguer l'absence de la variable
+    admin_password = os.environ.get('ADMIN_PASSWORD')
     
     conn = get_db_connection()
-    # Vérifier si l'admin existe déjà
-    admin = conn.execute('SELECT id, password_hash FROM users WHERE username = ?',
-                        (admin_username,)).fetchone()
-
-    if env_password:
-        # Cas 1 : Mot de passe fourni dans l'environnement (Initialisation ou Reset)
-        password_hash = generate_password_hash(env_password)
-        
-        if not admin:
-            conn.execute(
-                'INSERT INTO users (username, password_hash) VALUES (?, ?)',
-                (admin_username, password_hash)
-            )
-            app.logger.info(f'Utilisateur administrateur "{admin_username}" créé avec le mot de passe du .env')
-        else:
-            # On vérifie si le hash est différent pour éviter des écritures inutiles
-            if not check_password_hash(admin['password_hash'], env_password):
-                conn.execute(
-                    'UPDATE users SET password_hash = ? WHERE username = ?',
-                    (password_hash, admin_username)
-                )
-                app.logger.info(f'Mot de passe de l\'administrateur "{admin_username}" mis à jour depuis le .env')
-            else:
-                app.logger.info(f'Administrateur "{admin_username}" vérifié (mot de passe inchangé)')
-                
-    else:
-        # Cas 2 : Pas de mot de passe dans l'environnement
-        if not admin:
-            # L'admin n'existe pas et pas de mot de passe fourni -> Création sécurisée
-            # On génère un mot de passe aléatoire fort
-            random_password = os.urandom(12).hex()
-            password_hash = generate_password_hash(random_password)
-            
-            conn.execute(
-                'INSERT INTO users (username, password_hash) VALUES (?, ?)',
-                (admin_username, password_hash)
-            )
-            app.logger.warning(f'ATTENTION: Administrateur "{admin_username}" créé avec un mot de passe ALÉATOIRE.')
-            app.logger.warning(f'Veuillez noter ce mot de passe: {random_password}')
-            app.logger.warning('Pour définir votre propre mot de passe, ajoutez ADMIN_PASSWORD dans votre fichier .env et redémarrez.')
-        else:
-            # L'admin existe et pas de mot de passe dans l'env -> On ne fait rien (Sécurisé)
-            app.logger.info(f'Administrateur "{admin_username}" existant. Mot de passe non modifié (ADMIN_PASSWORD absent).')
-
-    conn.commit()
-    conn.close()
-
-def log_auth_attempt(user_id, action, request):
-    """Enregistre les tentatives d'authentification dans la base de données"""
-    conn = get_db_connection()
-
-    ip_address = request.remote_addr
-    user_agent = request.user_agent.string
-
-    conn.execute(
-        'INSERT INTO auth_logs (user_id, action, ip_address, user_agent) VALUES (?, ?, ?, ?)',
-        (user_id, action, ip_address, user_agent)
-    )
-
-    conn.commit()
-    conn.close()
-
-def update_db_schema():
-    """Mettre à jour le schéma de la base de données"""
-    conn = get_db_connection()
     try:
-        # Vérifier si les colonnes existent déjà
-        cursor = conn.execute("PRAGMA table_info(objets)")
-        columns = [col['name'] for col in cursor.fetchall()]
-
-        app.logger.info(f"Colonnes existantes: {columns}")
-
-        # Ajouter la colonne attributs_specifiques si elle n'existe pas
-        if 'attributs_specifiques' not in columns:
-            app.logger.info("Ajout de la colonne attributs_specifiques")
-            conn.execute('ALTER TABLE objets ADD COLUMN attributs_specifiques TEXT')
-
-        # Ajouter la colonne date_creation si elle n'existe pas
-        if 'date_creation' not in columns:
-            app.logger.info("Ajout de la colonne date_creation")
-            conn.execute('ALTER TABLE objets ADD COLUMN date_creation TEXT DEFAULT NULL')
-            # Mettre à jour les lignes existantes avec la date actuelle
-            current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            conn.execute(f"UPDATE objets SET date_creation = '{current_date}' WHERE date_creation IS NULL")
-
-        # Ajouter la colonne date_modification si elle n'existe pas
-        if 'date_modification' not in columns:
-            app.logger.info("Ajout de la colonne date_modification")
-            conn.execute('ALTER TABLE objets ADD COLUMN date_modification TEXT DEFAULT NULL')
-
-        # Création de la table liens si elle n'existe pas
-        conn.execute('''
-        CREATE TABLE IF NOT EXISTS liens (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            objet_id INTEGER NOT NULL,
-            url TEXT NOT NULL,
-            titre TEXT,
-            ordre INTEGER DEFAULT 0,
-            FOREIGN KEY (objet_id) REFERENCES objets (id) ON DELETE CASCADE
-        )
-        ''')
-
-        # Migration des anciennes URLs vers la table liens
-        if 'url' in columns:
-            app.logger.info("Migration des URLs vers la table liens...")
-            # Récupérer les objets avec une URL non vide
-            objets_avec_url = conn.execute("SELECT id, url FROM objets WHERE url IS NOT NULL AND url != ''").fetchall()
+        user = conn.execute('SELECT * FROM users WHERE username = ?', (admin_username,)).fetchone()
+        
+        if not user:
+            # Création : Si pas de mot de passe dans l'env, on utilise 'admin' par défaut
+            password_to_use = admin_password if admin_password else 'admin'
+            password_hash = generate_password_hash(password_to_use)
+            conn.execute(
+                'INSERT INTO users (username, password_hash) VALUES (?, ?)',
+                (admin_username, password_hash)
+            )
+            app.logger.info(f'Utilisateur administrateur "{admin_username}" créé.')
+        else:
+            # Mise à jour : UNIQUEMENT si une variable d'environnement est explicitement définie
+            if admin_password:
+                current_hash = user['password_hash']
+                if not check_password_hash(current_hash, admin_password):
+                    new_hash = generate_password_hash(admin_password)
+                    conn.execute(
+                        'UPDATE users SET password_hash = ? WHERE id = ?',
+                        (new_hash, user['id'])
+                    )
+                    app.logger.info(f'Mot de passe de l\'administrateur "{admin_username}" mis à jour depuis l\'environnement.')
             
-            migrated_count = 0
-            for obj in objets_avec_url:
-                # Vérifier si ce lien existe déjà pour éviter les doublons lors de redémarrages multiples
-                exists = conn.execute("SELECT COUNT(*) FROM liens WHERE objet_id = ? AND url = ?", (obj['id'], obj['url'])).fetchone()[0]
-                if not exists:
-                    conn.execute("INSERT INTO liens (objet_id, url, ordre) VALUES (?, ?, 0)", (obj['id'], obj['url']))
-                    migrated_count += 1
-            
-            if migrated_count > 0:
-                app.logger.info(f"{migrated_count} URLs migrées vers la table liens.")
-                # Optionnel : On pourrait vider la colonne url ici, mais on la garde par sécurité pour l'instant
-
         conn.commit()
-        app.logger.info("Schéma de base de données mis à jour avec succès!")
     except Exception as e:
-        app.logger.error(f"Erreur lors de la mise à jour du schéma: {e}")
+        app.logger.error(f"Erreur lors de la création/mise à jour de l'admin: {e}")
     finally:
         conn.close()
-
 
 def secure_file_path(base_dir, user_input):
     """
@@ -768,10 +650,14 @@ def ajouter_objet():
         elif not numero_inventaire:
             error = 'Le numéro d\'inventaire est obligatoire!'
         elif numero_inventaire_existe(numero_inventaire):
-            error = f'Le numéro d\'inventaire "{numero_inventaire}" existe déjà!'
+            # Collision détectée : on génère le prochain numéro libre
+            nouveau_numero = generer_numero_inventaire(get_db_connection)
+            error = f'Le numéro d\'inventaire "{numero_inventaire}" vient d\'être utilisé par un autre utilisateur. Le nouveau numéro "{nouveau_numero}" vous a été attribué. Veuillez cliquer à nouveau sur Ajouter pour confirmer.'
+            # On met à jour le numéro pour le réaffichage du formulaire
+            numero_inventaire = nouveau_numero
 
         if error:
-            flash(error, 'error')
+            flash(error, 'warning' if 'vient d\'être utilisé' in error else 'error')
             # Renvoyer le formulaire avec les données déjà saisies
             return render_template('admin/ajouter.html',
                                   objet={
@@ -795,41 +681,73 @@ def ajouter_objet():
                 if image_path:
                     image_principale_path = image_path
 
-            # Insérer les informations de l'objet (sans l'URL dans la table principale)
-            cursor = conn.execute(
-                'INSERT INTO objets (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale, date_ajout, attributs_specifiques) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), attributs_json)
-            )
+            try:
+                # Insérer les informations de l'objet (sans l'URL dans la table principale)
+                cursor = conn.execute(
+                    'INSERT INTO objets (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale, date_ajout, attributs_specifiques) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), attributs_json)
+                )
 
-            objet_id = cursor.lastrowid
-            
-            # Traitement des liens (Informations)
-            liens = request.form.getlist('liens')
-            for i, lien in enumerate(liens):
-                if lien.strip():
-                    conn.execute(
-                        'INSERT INTO liens (objet_id, url, ordre) VALUES (?, ?, ?)',
-                        (objet_id, lien.strip(), i)
-                    )
-
-            # Traitement des images supplémentaires
-            if 'images_supplementaires' in request.files:
-                files = request.files.getlist('images_supplementaires')
-                for i, file in enumerate(files):
-                    image_path = save_uploaded_file(file)
-                    if image_path:
-                        legende = request.form.get(f'legende_{i}', '')
-                        # Utiliser l'index comme ordre
+                objet_id = cursor.lastrowid
+                
+                # Traitement des liens (Informations)
+                liens = request.form.getlist('liens')
+                for i, lien in enumerate(liens):
+                    if lien.strip():
                         conn.execute(
-                            'INSERT INTO images (objet_id, chemin, legende, ordre) VALUES (?, ?, ?, ?)',
-                            (objet_id, image_path, legende, i)
+                            'INSERT INTO liens (objet_id, url, ordre) VALUES (?, ?, ?)',
+                            (objet_id, lien.strip(), i)
                         )
 
-            conn.commit()
-            conn.close()
-            app.logger.info(f'Objet "{nom}" ajouté par {current_user.username}')
-            flash('Objet ajouté avec succès !', 'success')
-            return redirect(url_for('admin'))
+                # Traitement des images supplémentaires
+                if 'images_supplementaires' in request.files:
+                    files = request.files.getlist('images_supplementaires')
+                    for i, file in enumerate(files):
+                        image_path = save_uploaded_file(file)
+                        if image_path:
+                            legende = request.form.get(f'legende_{i}', '')
+                            # Utiliser l'index comme ordre
+                            conn.execute(
+                                'INSERT INTO images (objet_id, chemin, legende, ordre) VALUES (?, ?, ?, ?)',
+                                (objet_id, image_path, legende, i)
+                            )
+
+                conn.commit()
+                conn.close()
+                app.logger.info(f'Objet "{nom}" ajouté par {current_user.username}')
+                flash('Objet ajouté avec succès !', 'success')
+                return redirect(url_for('admin'))
+            
+            except sqlite3.IntegrityError:
+                # En cas de concurrence critique où le check Python est passé mais la base a bloqué
+                conn.close()
+                nouveau_numero = generer_numero_inventaire(get_db_connection)
+                flash(f'Conflit détecté au dernier moment : Le numéro "{numero_inventaire}" a été pris. Nouveau numéro "{nouveau_numero}" attribué. Veuillez valider à nouveau.', 'warning')
+                
+                return render_template('admin/ajouter.html',
+                                      objet={
+                                          'nom': nom,
+                                          'description': description,
+                                          'categorie': categorie,
+                                          'fabricant': fabricant,
+                                          'date_fabrication': date_fabrication,
+                                          'numero_inventaire': nouveau_numero,
+                                          'attributs_specifiques': attributs_json
+                                      })
+            except Exception as e:
+                conn.close()
+                app.logger.error(f"Erreur lors de l'ajout: {e}")
+                flash(f"Une erreur est survenue lors de l'enregistrement : {e}", 'error')
+                return render_template('admin/ajouter.html',
+                                      objet={
+                                          'nom': nom,
+                                          'description': description,
+                                          'categorie': categorie,
+                                          'fabricant': fabricant,
+                                          'date_fabrication': date_fabrication,
+                                          'numero_inventaire': numero_inventaire,
+                                          'attributs_specifiques': attributs_json
+                                      })
 
     # Générer le prochain numéro d'inventaire disponible pour le formulaire vide
     prochain_numero = generer_numero_inventaire(get_db_connection)
@@ -866,6 +784,7 @@ def modifier_objet(id):
         # url = request.form['donnees_complementaires'] <-- Ancienne gestion
         numero_inventaire = request.form['numero_inventaire']
         etat = request.form.get('etat', '')  # Récupération de l'état de l'objet
+        version_soumise = int(request.form.get('version', 0))
 
         # Collecte des attributs spécifiques
         attributs_specifiques = {}
@@ -895,16 +814,20 @@ def modifier_objet(id):
             error = 'La catégorie est obligatoire!'
         elif numero_inventaire and numero_inventaire_existe(numero_inventaire, exclude_id=id):
             error = f'Le numéro d\'inventaire "{numero_inventaire}" existe déjà!'
+        elif version_soumise != objet['version']:
+            error = 'Cette fiche a été modifiée par un autre utilisateur entre-temps. Veuillez copier vos modifications, recharger la page et recommencer.'
 
         if error:
             flash(error, 'error')
             # Récupérer à nouveau les images pour le formulaire
             images = conn.execute('SELECT * FROM images WHERE objet_id = ? ORDER BY ordre', (id,)).fetchall()
             liens = conn.execute('SELECT * FROM liens WHERE objet_id = ? ORDER BY ordre', (id,)).fetchall()
+            # On recharge l'objet actuel de la base pour avoir la version la plus récente si nécessaire
+            objet_actuel = conn.execute('SELECT * FROM objets WHERE id = ?', (id,)).fetchone()
             conn.close()
 
-            # Renvoyer le formulaire avec les données modifiées
-            modified_objet = dict(objet)
+            # Renvoyer le formulaire avec les données modifiées (mais on garde la version de la base pour permettre de retenter après rechargement)
+            modified_objet = dict(objet_actuel)
             modified_objet.update({
                 'nom': nom,
                 'description': description,
@@ -931,8 +854,8 @@ def modifier_objet(id):
             current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             conn.execute(
-                'UPDATE objets SET nom = ?, description = ?, categorie = ?, fabricant = ?, date_fabrication = ?, numero_inventaire = ?, image_principale = ?, attributs_specifiques = ?, etat = ?, date_modification = ? WHERE id = ?',
-                (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, attributs_json, etat, current_datetime, id)
+                'UPDATE objets SET nom = ?, description = ?, categorie = ?, fabricant = ?, date_fabrication = ?, numero_inventaire = ?, image_principale = ?, attributs_specifiques = ?, etat = ?, date_modification = ?, version = version + 1 WHERE id = ? AND version = ?',
+                (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, attributs_json, etat, current_datetime, id, version_soumise)
             )
             
             # Mise à jour des liens : on supprime tout et on recrée (plus simple)
@@ -1245,14 +1168,10 @@ if __name__ == '__main__':
     if not os.path.exists('database/database.db'):
         os.makedirs('database', exist_ok=True)
         init_db()
-    else:
-        # Mettre à jour le schéma de la base de données si nécessaire
-        update_db_schema()
-
-    # Initialiser les tables d'authentification et créer l'admin
-    init_auth_db()
+        create_admin_user() # On crée l'admin juste après l'initialisation complète
+    
+    # On s'assure toujours que l'admin est à jour (au cas où le .env change)
     create_admin_user()
-    init_security()
 
     app.logger.info('Application démarrée')
 

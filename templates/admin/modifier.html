@@ -11,6 +11,7 @@
         <div class="form-group">
             <label for="nom">Nom (ou titre) *</label>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="version" value="{{ objet['version'] }}">
             <input type="text" id="nom" name="nom" value="{{ objet['nom'] }}" required>
         </div>
 
@@ -326,6 +327,11 @@
 
         container.appendChild(newItem);
         imageIndex++;
+        
+        // Activer le Drag & Drop sur le nouveau champ
+        if (typeof enhanceFileUploads === 'function') {
+            enhanceFileUploads();
+        }
     }
 
     function supprimerNouvelleImage(button) {
