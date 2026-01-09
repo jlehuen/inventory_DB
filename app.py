@@ -220,31 +220,58 @@ def init_auth_db():
     app.logger.info('Tables d\'authentification initialisées')
 
 def create_admin_user():
-    """Crée un utilisateur administrateur s'il n'existe pas déjà ou met à jour son mot de passe"""
+    """
+    Gère la création ou la mise à jour de l'utilisateur administrateur.
+    Sécurité : Ne met à jour le mot de passe que si ADMIN_PASSWORD est défini dans le .env.
+    """
     admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
-    admin_password = os.environ.get('ADMIN_PASSWORD', 'password')
-
+    # On récupère explicitement None si la variable n'existe pas, pour distinguer du vide
+    env_password = os.environ.get('ADMIN_PASSWORD')
+    
     conn = get_db_connection()
     # Vérifier si l'admin existe déjà
-    admin = conn.execute('SELECT id FROM users WHERE username = ?',
+    admin = conn.execute('SELECT id, password_hash FROM users WHERE username = ?',
                         (admin_username,)).fetchone()
 
-    password_hash = generate_password_hash(admin_password)
-
-    if not admin:
-        # Créer l'administrateur
-        conn.execute(
-            'INSERT INTO users (username, password_hash) VALUES (?, ?)',
-            (admin_username, password_hash)
-        )
-        app.logger.info(f'Utilisateur administrateur "{admin_username}" créé')
+    if env_password:
+        # Cas 1 : Mot de passe fourni dans l'environnement (Initialisation ou Reset)
+        password_hash = generate_password_hash(env_password)
+        
+        if not admin:
+            conn.execute(
+                'INSERT INTO users (username, password_hash) VALUES (?, ?)',
+                (admin_username, password_hash)
+            )
+            app.logger.info(f'Utilisateur administrateur "{admin_username}" créé avec le mot de passe du .env')
+        else:
+            # On vérifie si le hash est différent pour éviter des écritures inutiles
+            if not check_password_hash(admin['password_hash'], env_password):
+                conn.execute(
+                    'UPDATE users SET password_hash = ? WHERE username = ?',
+                    (password_hash, admin_username)
+                )
+                app.logger.info(f'Mot de passe de l\'administrateur "{admin_username}" mis à jour depuis le .env')
+            else:
+                app.logger.info(f'Administrateur "{admin_username}" vérifié (mot de passe inchangé)')
+                
     else:
-        # Mettre à jour le mot de passe de l'administrateur existant
-        conn.execute(
-            'UPDATE users SET password_hash = ? WHERE username = ?',
-            (password_hash, admin_username)
-        )
-        app.logger.info(f'Mot de passe de l\'administrateur "{admin_username}" mis à jour via .env')
+        # Cas 2 : Pas de mot de passe dans l'environnement
+        if not admin:
+            # L'admin n'existe pas et pas de mot de passe fourni -> Création sécurisée
+            # On génère un mot de passe aléatoire fort
+            random_password = os.urandom(12).hex()
+            password_hash = generate_password_hash(random_password)
+            
+            conn.execute(
+                'INSERT INTO users (username, password_hash) VALUES (?, ?)',
+                (admin_username, password_hash)
+            )
+            app.logger.warning(f'ATTENTION: Administrateur "{admin_username}" créé avec un mot de passe ALÉATOIRE.')
+            app.logger.warning(f'Veuillez noter ce mot de passe: {random_password}')
+            app.logger.warning('Pour définir votre propre mot de passe, ajoutez ADMIN_PASSWORD dans votre fichier .env et redémarrez.')
+        else:
+            # L'admin existe et pas de mot de passe dans l'env -> On ne fait rien (Sécurisé)
+            app.logger.info(f'Administrateur "{admin_username}" existant. Mot de passe non modifié (ADMIN_PASSWORD absent).')
 
     conn.commit()
     conn.close()

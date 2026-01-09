@@ -2,7 +2,7 @@
 
 Ce projet est une application web permettant de cataloguer et de présenter la collection de micro-ordinateurs et de dispositifs numériques du **Centre Culturel sur le Numérique du Mans (CCNM)** et du **Musée Martial Vivet**.
 
-Il est similaire dans l'esprit au site [patstec.fr](https://www.patstec.fr).
+Il s'inspire de l'esprit du site [patstec.fr](https://www.patstec.fr) pour la préservation du patrimoine scientifique et technique.
 
 ## Fonctionnalités
 
@@ -10,81 +10,93 @@ Il est similaire dans l'esprit au site [patstec.fr](https://www.patstec.fr).
 *   **Recherche avancée** : Recherche par mot-clé incluant le nom, la description, le fabricant, le numéro d'inventaire, l'année, et même les attributs spécifiques.
 *   **Numéros d'inventaire automatiques** : Génération automatique de numéros uniques (ex: `INV_IC2_0001`).
 *   **Champs dynamiques** :
-    *   Attributs spécifiques selon la catégorie (définis dans `categories.json`).
+    *   Attributs spécifiques selon la catégorie (entièrement configurables via `static/categories.json`).
     *   Gestion de multiples liens d'informations (URL) pour chaque objet.
     *   Galerie d'images avec gestion de l'ordre et des légendes.
 *   **Administration** : Interface sécurisée pour ajouter, modifier et supprimer des objets (nécessite une authentification).
-*   **Export PDF** : Génération automatique de fiches PDF pour chaque objet, incluant toutes les données et images.
+*   **Export PDF** : Génération automatique de fiches PDF complètes pour chaque objet.
 *   **Sécurité** : Protection contre les attaques par force brute sur la page de connexion.
-*   **Responsive Design** : Interface moderne adaptée aux mobiles et aux grands écrans (mode "wide" pour les détails).
+*   **Responsive Design** : Interface moderne adaptée aux mobiles et aux grands écrans.
+*   **Maintenance facile** : Outils intégrés pour la sauvegarde, le nettoyage des images et la mise à jour du schéma de données.
 
 ## Prérequis
 
 *   Python 3.7+
 *   Pip (gestionnaire de paquets Python)
 
-## Installation Rapide (Développement)
+## Installation et Lancement (Local)
 
-1.  **Cloner le dépôt :**
-    ```bash
-    git clone https://github.com/jlehuen/inventory_DB.git
-    cd inventory_DB
-    ```
+1.  **Installation des dépendances :**
 
-2.  **Créer un environnement virtuel :**
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate  # Sur Windows: venv\Scripts\activate
-    ```
-
-3.  **Installer les dépendances :**
     ```bash
     pip install -r requirements.txt
     ```
 
-4.  **Configurer l'environnement :**
-    Copiez le fichier `.env.example` (s'il existe) ou créez un fichier `.env` à la racine :
+2.  **Configuration (Optionnel mais recommandé) :**
+    Créez un fichier `.env` à la racine si vous souhaitez personnaliser les accès :
+    
     ```ini
-    SECRET_KEY=votre_cle_secrete_tres_longue
+    SECRET_KEY=votre_cle_secrete
     ADMIN_USERNAME=admin
-    ADMIN_PASSWORD=votre_mot_de_passe
-    FLASK_ENV=development
+    ADMIN_PASSWORD=votre_mot_de_passe_initial
     ```
+    > **Note de sécurité :** Une fois le premier lancement effectué et le compte créé, vous pouvez supprimer la ligne `ADMIN_PASSWORD` du fichier `.env`. Le mot de passe restera actif (stocké de manière hachée en base) et ne sera plus lisible en clair dans le fichier de configuration.
 
-5.  **Lancer l'application :**
+3.  **Lancer le serveur :**
+
     ```bash
-    ./run.command  # Ou: python app.py
+    ./run_server.command
+    # Ou via python : python app.py
     ```
-    Accédez à `http://127.0.0.1:5000`.
+    Le serveur démarrera à l'adresse `http://127.0.0.1:5000`.
+
+4.  **Accéder à l'application :**
+    Vous pouvez utiliser le script suivant pour ouvrir directement votre navigateur :
+    
+    ```bash
+    ./run_client.command
+    ```
 
 ## Structure du Projet
 
 ```
-inventory_DB/
-├── app.py                 # Application Flask principale (routes, modèles)
-├── requirements.txt       # Liste des dépendances Python
-├── DEPLOY.md              # Guide de déploiement en production
-├── run.command            # Script de lancement rapide
+inventaire_CCNM/
+├── app.py                      # Application Flask principale
+├── requirements.txt            # Liste des dépendances
+├── DEPLOY.md                   # Guide de déploiement production
+├── run_server.command          # Lancement du serveur
+├── run_client.command          # Ouverture du navigateur
+├── backup.command              # Script de sauvegarde (base de données)
+├── upgrade.command             # Script de mise à jour des dépendances
 ├── static/
-│   ├── css/               # Styles (modernui.css, style.css)
-│   ├── categories.json    # Configuration des attributs par catégorie
-│   └── schema.sql         # Schéma de la base de données
-├── templates/             # Templates HTML (Jinja2)
-│   ├── base.html          # Layout principal
-│   ├── admin/             # Templates d'administration
-│   └── ...
-├── scripts/               # Scripts utilitaires
-│   ├── pdf_generator.py   # Génération PDF
-│   ├── clean_images.py    # Nettoyage des images orphelines
-│   └── login_security.py  # Sécurité de l'authentification
+│   ├── css/                    # Feuilles de style
+│   ├── categories.json         # Configuration des attributs par catégorie
+│   └── schema.sql              # Schéma de la base de données
+├── templates/                  # Templates HTML (Jinja2)
+├── scripts/                    # Scripts backend
+│   ├── pdf_generator.py        # Moteur PDF
+│   ├── clean_images.py         # Nettoyage fichiers orphelins
+│   ├── login_security.py       # Sécurité auth
+│   └── resize_existing_images.py # Optimisation des images uploadées
+├── utils/
+│   └── sync_categories.py      # Outil de synchronisation JSON <-> BDD
 └── database/
-    └── uploads/           # Stockage des images uploadées
+    ├── database.db             # Base de données SQLite (créée au lancement)
+    └── uploads/                # Stockage des images
 ```
 
-## Déploiement en Production
+## Maintenance
 
-Un guide complet pour le déploiement sur un serveur Linux (Ubuntu/Debian) avec Nginx et Gunicorn est disponible dans le fichier [DEPLOY.md](DEPLOY.md).
+Le projet inclut plusieurs utilitaires pour faciliter la maintenance au quotidien :
+
+*   **Sauvegardes** : `./backup.command` crée une archive datée de la base de données et des images dans le dossier `backups/`.
+*   **Évolution du modèle** : Si vous modifiez `static/categories.json` (ajout/suppression d'attributs), utilisez `python utils/sync_categories.py` pour mettre à jour les données existantes en base.
+*   **Optimisation** : `python scripts/resize_existing_images.py` permet de redimensionner et compresser les images qui auraient été uploadées sans traitement.
+
+## Déploiement
+
+Un guide détaillé pour le déploiement sur un serveur Linux (avec Nginx/Gunicorn) est disponible dans [DEPLOY.md](DEPLOY.md).
 
 ## Licence
 
-Ce projet est développé pour le CCNM.
+Projet développé pour le Centre Culturel sur le Numérique du Mans.
