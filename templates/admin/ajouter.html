@@ -278,6 +278,11 @@
 
         container.appendChild(newItem);
         imageIndex++;
+        
+        // Activer le Drag & Drop sur le nouveau champ
+        if (typeof enhanceFileUploads === 'function') {
+            enhanceFileUploads();
+        }
     }
 
     function supprimerChampImage(button) {

@@ -8,12 +8,15 @@ Il s'inspire de l'esprit du site [patstec.fr](https://www.patstec.fr) pour la pr
 
 *   **Catalogue en ligne** : Affichage des objets avec images, descriptions détaillées, état, et liens d'informations multiples.
 *   **Recherche avancée** : Recherche par mot-clé incluant le nom, la description, le fabricant, le numéro d'inventaire, l'année, et même les attributs spécifiques.
-*   **Numéros d'inventaire automatiques** : Génération automatique de numéros uniques (ex: `INV_IC2_0001`).
+*   **Numéros d'inventaire automatiques** : Génération automatique de numéros uniques (ex: `INV_IC2_0001`) avec gestion intelligente des conflits (réattribution automatique si le numéro est pris au dernier moment).
 *   **Champs dynamiques** :
     *   Attributs spécifiques selon la catégorie (entièrement configurables via `static/categories.json`).
     *   Gestion de multiples liens d'informations (URL) pour chaque objet.
     *   Galerie d'images avec gestion de l'ordre et des légendes.
-*   **Administration** : Interface sécurisée pour ajouter, modifier et supprimer des objets (nécessite une authentification).
+    *   **Chargement facilité** : Support du glisser-déposer (Drag & Drop) pour toutes les images.
+*   **Administration** : 
+    *   Interface sécurisée pour ajouter, modifier et supprimer des objets (nécessite une authentification).
+    *   **Verrouillage optimiste** : Prévention des conflits de modification (si deux admins éditent la même fiche en même temps).
 *   **Export PDF** : Génération automatique de fiches PDF complètes pour chaque objet.
 *   **Sécurité** : Protection contre les attaques par force brute sur la page de connexion.
 *   **Responsive Design** : Interface moderne adaptée aux mobiles et aux grands écrans.
@@ -40,7 +43,11 @@ Il s'inspire de l'esprit du site [patstec.fr](https://www.patstec.fr) pour la pr
     ADMIN_USERNAME=admin
     ADMIN_PASSWORD=votre_mot_de_passe_initial
     ```
-    > **Note de sécurité :** Une fois le premier lancement effectué et le compte créé, vous pouvez supprimer la ligne `ADMIN_PASSWORD` du fichier `.env`. Le mot de passe restera actif (stocké de manière hachée en base) et ne sera plus lisible en clair dans le fichier de configuration.
+    > **Note de sécurité :** 
+    > 1. Lancez l'application une première fois pour créer le compte administrateur.
+    > 2. Une fois le compte créé, vous pouvez **supprimer la ligne `ADMIN_PASSWORD`** du fichier `.env`.
+    > 3. Le mot de passe restera actif (stocké de manière hachée en base) et ne sera plus lisible en clair.
+    > 4. Si vous laissez la variable `ADMIN_PASSWORD`, le mot de passe sera réinitialisé à cette valeur à chaque redémarrage.
 
 3.  **Lancer le serveur :**
 

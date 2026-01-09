@@ -14,9 +14,9 @@ venv/
 
 # Environnement et Secrets (TRES IMPORTANT)
 .env
-instance/
 .secret
-ccnm.txt
+readme.txt
+instance/
 
 # Base de données
 database/database.db

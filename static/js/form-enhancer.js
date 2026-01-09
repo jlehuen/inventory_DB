@@ -179,3 +179,113 @@ function validateField(field) {
     
     return isValid;
 }
+
+// Améliore les champs d'upload de fichiers avec Drag & Drop
+function enhanceFileUploads() {
+    const fileInputs = document.querySelectorAll('input[type="file"]:not(.enhanced-file-input)');
+    
+    fileInputs.forEach(input => {
+        // Marquer comme traité
+        input.classList.add('enhanced-file-input');
+        
+        // Créer la zone de drop si elle n'existe pas déjà
+        if (!input.closest('.file-drop-zone')) {
+            createDropZone(input);
+        }
+    });
+}
+
+// Crée l'interface de Drag & Drop autour d'un input file
+function createDropZone(input) {
+    // Créer le wrapper
+    const dropZone = document.createElement('div');
+    dropZone.className = 'file-drop-zone';
+    
+    // Créer le contenu visuel
+    const content = document.createElement('div');
+    content.className = 'drop-zone-content';
+    content.innerHTML = `
+        <div class="drop-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+        <div class="drop-text">Glissez une image ici</div>
+        <div class="drop-hint">ou cliquez pour sélectionner</div>
+    `;
+    
+    // Insérer le wrapper avant l'input
+    input.parentNode.insertBefore(dropZone, input);
+    
+    // Déplacer l'input et le contenu dans le wrapper
+    dropZone.appendChild(input);
+    dropZone.appendChild(content);
+    
+    // Gérer les événements de Drag & Drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+    });
+    
+    dropZone.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            input.files = files;
+            
+            // Déclencher l'événement change pour d'autres scripts
+            // Cela déclenchera aussi notre propre écouteur 'change' qui mettra à jour la miniature
+            const event = new Event('change', { bubbles: true });
+            input.dispatchEvent(event);
+        }
+    }
+    
+    // Gérer le changement classique (via clic)
+    input.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            updateThumbnail(dropZone, this.files[0]);
+        }
+    });
+}
+
+// Met à jour l'aperçu de l'image
+function updateThumbnail(dropZone, file) {
+    // Supprimer l'ancien contenu visuel
+    let content = dropZone.querySelector('.drop-zone-content');
+    if (content) {
+        content.style.display = 'none';
+    }
+    
+    // Supprimer l'ancien aperçu s'il existe
+    let oldPreview = dropZone.querySelector('.file-preview');
+    if (oldPreview) {
+        oldPreview.remove();
+    }
+    
+    // Créer le nouvel aperçu
+    const preview = document.createElement('div');
+    preview.className = 'file-preview';
+    
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    
+    reader.onloadend = function() {
+        preview.innerHTML = `
+            <img src="${reader.result}" alt="Aperçu">
+            <span class="file-preview-name">${file.name}</span>
+            <i class="fas fa-check-circle" style="color: var(--success-color); margin-left: auto;"></i>
+        `;
+        dropZone.appendChild(preview);
+    };
+}
