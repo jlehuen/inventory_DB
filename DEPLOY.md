@@ -56,7 +56,8 @@ nano .env
 ```
 
 Modifiez les valeurs suivantes :
-*   `SECRET_KEY` : Générez une chaîne aléatoire longue et complexe.
+*   **`SECRET_KEY`** : GÉNÉREZ UNE CLÉ UNIQUE ! Ne laissez pas la valeur par défaut.
+    *   *Commande pour générer une clé :* `python3 -c 'import os; print(os.urandom(24).hex())'`
 *   `FLASK_ENV` : Mettez `production`.
 *   `ADMIN_PASSWORD` : Définissez un mot de passe fort pour le compte admin par défaut.
 
