@@ -1,3 +1,10 @@
+"""
+Module de tests basiques.
+
+Ce module vérifie le bon fonctionnement des routes publiques principales
+(page d'accueil) et la gestion des erreurs (404).
+"""
+
 def test_index(client):
     """Test que la page d'accueil s'affiche correctement."""
     response = client.get('/')

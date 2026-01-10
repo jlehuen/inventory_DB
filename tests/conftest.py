@@ -1,3 +1,10 @@
+"""
+Configuration des tests Pytest.
+
+Ce fichier définit les fixtures partagées (client de test, authentification,
+base de données temporaire) pour l'ensemble des tests.
+"""
+
 import os
 import tempfile
 import pytest
