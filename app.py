@@ -896,10 +896,16 @@ def modifier_objet(id):
             # Mettre à jour les informations de l'objet (sans l'URL)
             current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            conn.execute(
+            cursor = conn.execute(
                 'UPDATE objets SET nom = ?, description = ?, categorie = ?, fabricant = ?, date_fabrication = ?, numero_inventaire = ?, image_principale = ?, attributs_specifiques = ?, etat = ?, origine = ?, date_modification = ?, version = version + 1 WHERE id = ? AND version = ?',
                 (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, attributs_json, etat, origine, current_datetime, id, version_soumise)
             )
+            
+            if cursor.rowcount == 0:
+                conn.rollback()
+                conn.close()
+                flash('Conflit de modification critique : Cette fiche a été modifiée par un autre utilisateur au moment même où vous validiez. Vos modifications ont été annulées pour protéger les données. Veuillez recharger la page.', 'error')
+                return redirect(url_for('modifier_objet', id=id))
             
             # Mise à jour des liens : on supprime tout et on recrée (plus simple)
             conn.execute('DELETE FROM liens WHERE objet_id = ?', (id,))
@@ -1225,6 +1231,7 @@ def admin_post_nettoyage():
     return redirect(url_for('admin'))
 
 # Ajout d'entêtes de sécurité
+@app.after_request
 def add_security_headers(response):
     """Ajoute les en-têtes de sécurité HTTP à la réponse."""
     # Protection contre le clickjacking
