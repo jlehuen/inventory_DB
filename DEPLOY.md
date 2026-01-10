@@ -162,6 +162,15 @@ sudo nginx -t
 sudo systemctl restart nginx
 ```
 
+## 6.5 Configuration du Pare-feu (UFW)
+
+Si le pare-feu UFW est activé sur votre serveur, autorisez le trafic Nginx :
+
+```bash
+sudo ufw allow 'Nginx Full'
+sudo ufw status
+```
+
 ## 7. Sécurisation (HTTPS)
 
 Il est fortement recommandé d'activer HTTPS avec Certbot (Let's Encrypt).
