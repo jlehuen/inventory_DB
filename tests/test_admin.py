@@ -1,3 +1,10 @@
+"""
+Module de tests pour les fonctionnalités d'administration.
+
+Ce module contient les tests liés à l'authentification, l'accès aux pages
+d'administration et les opérations CRUD sur les objets (ajout, modification).
+"""
+
 import pytest
 from app import get_db_connection
 
