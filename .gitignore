@@ -15,7 +15,7 @@ venv/
 # Environnement et Secrets (TRES IMPORTANT)
 .env
 .secret
-readme.txt
+passwrd.txt
 instance/
 
 # Base de données
