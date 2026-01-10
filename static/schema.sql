@@ -17,8 +17,9 @@ CREATE TABLE objets (
     numero_inventaire TEXT UNIQUE NOT NULL, -- Contrainte UNIQUE essentielle
     image_principale TEXT,
     etat TEXT,
-    date_ajout TEXT NOT NULL,
-    date_modification TEXT DEFAULT NULL,
+    origine TEXT,
+    date_ajout TIMESTAMP,
+    date_modification TIMESTAMP,
     attributs_specifiques TEXT,
     version INTEGER DEFAULT 1 -- Pour le verrouillage optimiste
 );
