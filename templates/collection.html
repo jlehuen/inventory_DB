@@ -15,6 +15,7 @@
     {% if current_user.is_authenticated %}
     <div class="admin-header">
         <a href="{{ url_for('ajouter_objet') }}" class="btn"><i class="fas fa-plus"></i> Ajouter un objet</a>
+        <a href="{{ url_for('export_csv') }}" class="btn secondary"><i class="fas fa-file-csv"></i> Exporter CSV</a>
         <a href="{{ url_for('nettoyer_fichiers') }}" class="btn secondary"><i class="fas fa-broom"></i> Nettoyer les fichiers</a>
     </div>
     {% endif %}

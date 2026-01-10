@@ -14,7 +14,7 @@
     <header>
         <div class="header-top">
             <div class="logo">
-                <a href="{{ url_for('index') }}">
+                <a href="{{ url_for('admin') if current_user.is_authenticated else url_for('index') }}">
                     <h1>Centre Culturel sur le Numérique du Mans (CCNM)</h1>
                     <p>Catalogue de la collection de micro-ordinateurs et de dispositifs numériques</p>
                 </a>
@@ -27,7 +27,7 @@
         </div>
         <nav>
             <ul>
-                <li><a href="{{ url_for('index') }}">Accueil</a></li>
+                <li><a href="{{ url_for('admin') if current_user.is_authenticated else url_for('index') }}">Accueil</a></li>
                 <li><a href="{{ url_for('categories') }}">Catégories</a></li>
                 <li><a href="{{ url_for('collection') }}">Collection</a></li>
                 {% if current_user.is_authenticated %}

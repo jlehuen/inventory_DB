@@ -22,9 +22,35 @@ Il s'inspire de l'esprit du site [patstec.fr](https://www.patstec.fr) pour la pr
 *   **Responsive Design** : Interface moderne adaptée aux mobiles et aux grands écrans.
 *   **Maintenance facile** : Outils intégrés pour la sauvegarde, le nettoyage des images et la mise à jour du schéma de données.
 
+## Gestion des Catégories
+
+L'application est entièrement dynamique. Pour ajouter ou modifier une catégorie d'objets (ex: "Consoles de jeu", "Appareils photo"), vous n'avez pas besoin de modifier le code Python. Tout se configure dans le fichier `static/categories.json`.
+
+### Ajouter une catégorie
+
+1.  Ouvrez `static/categories.json`.
+2.  Ajoutez un nouvel objet avec le nom de la catégorie au pluriel :
+    ```json
+    "Appareils photo": {
+      "icon": "fa-camera",
+      "description": "Appareils de prise de vue historiques.",
+      "attributes": [
+        { "id": "focale", "label": "Focale", "type": "text", "ordre": 1 },
+        { "id": "format", "label": "Format", "type": "text", "ordre": 2 }
+      ]
+    }
+    ```
+3.  Enregistrez. La catégorie apparaîtra immédiatement dans l'interface d'ajout et de modification.
+
+### Modifier une catégorie
+
+*   **Changer l'icône ou la description** : Modifiez simplement les valeurs dans le JSON.
+*   **Ajouter des champs spécifiques** : Ajoutez une entrée dans la liste `attributes`.
+*   **Renommer une catégorie** : Si vous renommez une catégorie dans le JSON, vous devrez également mettre à jour les objets existants en base de données pour qu'ils pointent vers le nouveau nom.
+
 ## Prérequis
 
-*   Python 3.7+
+*   Python 3.8+
 *   Pip (gestionnaire de paquets Python)
 
 ## Installation et Lancement (Local)
@@ -99,6 +125,36 @@ Le projet inclut plusieurs utilitaires pour faciliter la maintenance au quotidie
 *   **Sauvegardes** : `./backup.command` crée une archive datée de la base de données et des images dans le dossier `backups/`.
 *   **Évolution du modèle** : Si vous modifiez `static/categories.json` (ajout/suppression d'attributs), utilisez `python utils/sync_categories.py` pour mettre à jour les données existantes en base.
 *   **Optimisation** : `python scripts/resize_existing_images.py` permet de redimensionner et compresser les images qui auraient été uploadées sans traitement.
+
+## Tests Automatisés
+
+Pour garantir la stabilité du projet lors des modifications, une suite de tests automatisés est disponible. Elle utilise **pytest** et vérifie les fonctionnalités critiques (connexion, ajout d'objet, sécurité) sans affecter votre base de données réelle (utilisation d'une base temporaire).
+
+### Lancer les tests pas à pas
+
+Ouvrez un terminal dans le dossier du projet et exécutez les commandes suivantes :
+
+```bash
+# 1. Activer l'environnement virtuel (indispensable)
+source venv/bin/activate
+
+# 2. Lancer tous les tests
+pytest
+
+# Optionnel : Voir le détail de chaque test
+pytest -v
+
+# Optionnel : S'arrêter dès la première erreur rencontrée
+pytest -x
+```
+
+> **Note importante** : Les tests créent automatiquement une base de données temporaire. Vos données réelles (dans `database/database.db`) ne sont **jamais touchées** par les tests.
+
+### Que testons-nous ?
+*   **Intégrité** : L'application démarre correctement.
+*   **Routing** : Les pages principales (Accueil, Login) répondent (Code 200).
+*   **Sécurité** : Les pages d'administration sont bien inaccessibles sans authentification.
+*   **Fonctionnalités** : Le cycle complet d'ajout d'un objet (Formulaire -> Base de données) est validé, y compris la gestion des champs dynamiques JSON.
 
 ## Déploiement
 

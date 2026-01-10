@@ -80,11 +80,24 @@
             <small>Ce numéro ne peut pas être modifié</small>
         </div>
 
-        <div class="form-group">
-            <label for="etat">État de l'objet</label>
-            <input type="text" id="etat" name="etat" value="{{ objet['etat'] }}">
-            <small>Décrivez l'état actuel de l'objet (ex: Bon état, Défectueux, etc.)</small>
-        </div>
+            <div class="form-group">
+                <label for="etat">État de l'objet</label>
+                <select id="etat" name="etat" class="form-control">
+                    <option value="" {% if not objet['etat'] %}selected{% endif %}>Non spécifié</option>
+                    <option value="Neuf" {% if objet['etat'] == 'Neuf' %}selected{% endif %}>Neuf (jamais utilisé)</option>
+                    <option value="Très bon état" {% if objet['etat'] == 'Très bon état' %}selected{% endif %}>Très bon état</option>
+                    <option value="Bon état" {% if objet['etat'] == 'Bon état' %}selected{% endif %}>Bon état (traces d'usure)</option>
+                    <option value="État moyen" {% if objet['etat'] == 'État moyen' %}selected{% endif %}>État moyen (fonctionnel)</option>
+                    <option value="Mauvais état" {% if objet['etat'] == 'Mauvais état' %}selected{% endif %}>Mauvais état (à restaurer)</option>
+                    <option value="Hors service" {% if objet['etat'] == 'Hors service' %}selected{% endif %}>Hors service / Pour pièces</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="origine">Origine / Donateur</label>
+                <input type="text" id="origine" name="origine" class="form-control" value="{{ objet['origine']|default('') }}" placeholder="Ex: Don de M. Dupont...">
+                <small class="form-help">Information confidentielle (visible uniquement par les administrateurs)</small>
+            </div>
 
         <div class="form-group">
             <h3>Champs spécifiques à la catégorie</h3>

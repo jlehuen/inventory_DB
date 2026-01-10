@@ -10,11 +10,13 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
 from reportlab.lib.units import cm
+from reportlab.lib.utils import ImageReader
 import os
 import io
 from flask import url_for
 import json
 from datetime import datetime
+import qrcode
 
 def generate_object_pdf(objet, images, liens, base_url):
     """
@@ -31,6 +33,52 @@ def generate_object_pdf(objet, images, liens, base_url):
     """
     # Créer un buffer pour stocker le PDF
     buffer = io.BytesIO()
+
+    # Génération du QR Code
+    qr_buffer = io.BytesIO()
+    try:
+        # Construire l'URL complète vers la fiche objet
+        # On s'assure que l'URL ne finit pas par un double slash si base_url en a déjà un
+        clean_base_url = base_url.rstrip('/')
+        object_url = f"{clean_base_url}/objet/{objet['id']}"
+        
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(object_url)
+        qr.make(fit=True)
+        img_qr = qr.make_image(fill_color="black", back_color="white")
+        img_qr.save(qr_buffer, format='PNG')
+        qr_buffer.seek(0)
+    except Exception as e:
+        print(f"Erreur génération QR Code: {e}")
+        qr_buffer = None
+
+    # Fonction callback pour dessiner le QR Code sur la première page
+    def on_first_page(canvas, doc):
+        canvas.saveState()
+        # Titre header
+        canvas.setFont('Helvetica-Oblique', 9)
+        canvas.setFillColor(colors.grey)
+        canvas.drawString(2*cm, A4[1] - 1.5*cm, "Inventaire CCNM - Fiche descriptive")
+        
+        if qr_buffer:
+            # Positionnement en haut à droite
+            # A4 width = 595.27, height = 841.89
+            qr_size = 3*cm
+            x_pos = A4[0] - qr_size - 1*cm
+            y_pos = A4[1] - qr_size - 1*cm
+            
+            canvas.drawImage(ImageReader(qr_buffer), x_pos, y_pos, width=qr_size, height=qr_size)
+            
+            # Ajouter l'URL en texte sous le QR code
+            canvas.setFont('Helvetica', 8)
+            canvas.drawCentredString(x_pos + qr_size/2, y_pos - 10, f"ID: {objet['id']}")
+            
+        canvas.restoreState()
 
     # Créer le document avec marges appropriées
     doc = SimpleDocTemplate(
@@ -140,7 +188,7 @@ def generate_object_pdf(objet, images, liens, base_url):
     elements.append(Spacer(1, 1*cm))
 
     # Titre
-    elements.append(Paragraph(f"Objet : {objet['nom']}", title_style))
+    elements.append(Paragraph(objet['nom'], title_style))
     elements.append(Spacer(1, 0.5*cm))
 
     # Si l'objet a une image principale, l'ajouter
@@ -166,10 +214,6 @@ def generate_object_pdf(objet, images, liens, base_url):
                 url_html = format_clickable_url(lien['url'])
                 # Ajouter une puce avant chaque lien
                 links_cell_content.append(Paragraph(f"• {url_html}", url_style))
-    elif objet['url']:
-        # Fallback pour la rétrocompatibilité
-        url_html = format_clickable_url(objet['url'])
-        links_cell_content.append(Paragraph(f"• {url_html}", url_style))
     
     if not links_cell_content:
         links_cell_content = create_paragraph("-", normal_style)
@@ -177,11 +221,16 @@ def generate_object_pdf(objet, images, liens, base_url):
     # Informations techniques sous forme de tableau
     elements.append(Paragraph("Données générales", heading2_style))
 
+    # Adapter les libellés selon la catégorie (comme sur la vue HTML)
+    is_book = objet['categorie'] == 'Livre'
+    label_nom = "Titre" if is_book else "Modèle"
+    label_fabricant = "Éditeur" if is_book else "Fabricant"
+
     # Utiliser des paragraphes pour toutes les cellules de données
     data = [
         ["Catégorie", create_paragraph(objet['categorie'] or "Non spécifiée", table_cell_style)],
-        ["Modèle", create_paragraph(objet['nom'], table_cell_style)],
-        ["Fabricant", create_paragraph(objet['fabricant'] or "Non spécifié", table_cell_style)],
+        [label_nom, create_paragraph(objet['nom'], table_cell_style)],
+        [label_fabricant, create_paragraph(objet['fabricant'] or "Non spécifié", table_cell_style)],
         ["Année de sortie", create_paragraph(objet['date_fabrication'] or "Non spécifiée", table_cell_style)],
         ["Informations", links_cell_content],
         ["État de l'objet", create_paragraph(objet['etat'] or "Non spécifié", table_cell_style)],
@@ -210,7 +259,9 @@ def generate_object_pdf(objet, images, liens, base_url):
             attributs = json.loads(objet['attributs_specifiques'])
 
             if attributs:
-                elements.append(Paragraph("Caractéristiques techniques", heading2_style))
+                # Titre de section adapté à la catégorie
+                section_title = "Informations bibliographiques" if objet['categorie'] == 'Livre' else "Caractéristiques techniques"
+                elements.append(Paragraph(section_title, heading2_style))
 
                 # Préparer les données pour le tableau
                 data = []
@@ -286,11 +337,12 @@ def generate_object_pdf(objet, images, liens, base_url):
     )
 
     elements.append(Paragraph(f"Fiche créée le {objet['date_ajout'][:10]}", footer_style))
-    elements.append(Paragraph(f"Mise à jour le {objet['date_modification'][:10]}", footer_style))
+    if objet['date_modification']:
+        elements.append(Paragraph(f"Mise à jour le {objet['date_modification'][:10]}", footer_style))
     elements.append(Paragraph(f"Document généré le {datetime.now().strftime('%Y-%m-%d')}", footer_style))
 
     # Construire le document
-    doc.build(elements)
+    doc.build(elements, onFirstPage=on_first_page)
 
     # Réinitialiser la position du curseur au début du buffer
     buffer.seek(0)

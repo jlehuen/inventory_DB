@@ -80,15 +80,6 @@
                                     </li>
                                 {% endfor %}
                                 </ul>
-                            {% elif objet['url'] %}
-                                <ul style="list-style-type: disc; padding-left: 1.2rem; margin: 0;">
-                                    <li>
-                                        <a href="{{ objet['url'] }}" target="_blank" class="url-link">
-                                            {{ objet['url'] }}
-                                            <i class="fas fa-external-link-alt"></i>
-                                        </a>
-                                    </li>
-                                </ul>
                             {% else %}
                             -
                             {% endif %}
@@ -102,6 +93,13 @@
                         <th>Numéro d'inventaire :</th>
                         <td>{{ objet['numero_inventaire'] or '-' }}</td>
                     </tr>
+
+                    {% if current_user.is_authenticated %}
+                    <tr class="admin-only-row" style="background-color: #fdf2e9;">
+                        <th><i class="fas fa-user-secret"></i> Origine / Donateur :</th>
+                        <td>{{ objet['origine'] or '-' }} <em style="font-size: 0.8em; color: #666;">(Visible uniquement par admin)</em></td>
+                    </tr>
+                    {% endif %}
 
                     <tr>
                         <th>Date d'inventaire :</th>
@@ -118,7 +116,7 @@
 
             {% if objet['attributs_specifiques'] %}
             <div class="info-section">
-                <h2>Caractéristiques spécifiques</h2>
+                <h2>{% if objet['categorie'] == 'Livre' %}Informations bibliographiques{% else %}Caractéristiques techniques{% endif %}</h2>
                 <table class="info-table">
                     {% set attrs = objet['attributs_specifiques']|from_json %}
                     {% set ordered_attrs = [] %}

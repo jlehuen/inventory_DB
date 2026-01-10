@@ -173,7 +173,8 @@ def allowed_file(filename):
 
 def get_db_connection():
     """Établit et retourne une connexion à la base de données SQLite."""
-    conn = sqlite3.connect('database/database.db')
+    db_path = app.config.get('DATABASE', 'database/database.db')
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -184,7 +185,7 @@ def init_db():
         conn.executescript(f.read())
     conn.commit()
     conn.close()
-    app.logger.info('Base de données initialisée avec le nouveau schéma')
+    app.logger.info(f"Base de données initialisée avec le nouveau schéma (Path: {app.config.get('DATABASE', 'database/database.db')})")
 
 def log_auth_attempt(user_id, action, req):
     """Enregistre une tentative d'authentification dans la base de données."""
@@ -358,7 +359,7 @@ def login():
     """Gère la connexion des utilisateurs."""
     # Rediriger si l'utilisateur est déjà connecté
     if current_user.is_authenticated:
-        return redirect(url_for('collection'))
+        return redirect(url_for('admin'))
 
     form = LoginForm()
 
@@ -383,10 +384,10 @@ def login():
             log_auth_attempt(user.id, 'login', request)
             app.logger.info(f'Connexion réussie pour {username}')
 
-            # Redirection vers la page demandée ou la page collection
+            # Redirection vers la page demandée ou la page admin
             next_page = request.args.get('next')
             flash('Connexion réussie', 'success')
-            return redirect(next_page or url_for('collection'))
+            return redirect(next_page or url_for('admin'))
         else:
             # Connexion échouée
             if user:
@@ -599,8 +600,44 @@ def collection():
 @app.route('/admin')
 @login_required
 def admin():
-    """Rediriger vers la page collection qui contient maintenant toutes les fonctionnalités admin"""
-    return redirect(url_for('collection'))
+    """Affiche le tableau de bord d'administration."""
+    conn = get_db_connection()
+    
+    # 1. Chiffres clés globaux
+    total_objets = conn.execute('SELECT COUNT(*) FROM objets').fetchone()[0]
+    
+    # 2. Stats par catégorie (pour le graphique)
+    stats_categories = conn.execute('''
+        SELECT categorie, COUNT(*) as count 
+        FROM objets 
+        GROUP BY categorie 
+        ORDER BY count DESC
+    ''').fetchall()
+    
+    # 3. Stats par état (pour le suivi sanitaire)
+    stats_etats = conn.execute('''
+        SELECT etat, COUNT(*) as count 
+        FROM objets 
+        WHERE etat IS NOT NULL AND etat != ''
+        GROUP BY etat 
+        ORDER BY count DESC
+    ''').fetchall()
+    
+    # 4. Derniers objets ajoutés (pour l'activité récente)
+    derniers_objets = conn.execute('''
+        SELECT id, nom, categorie, numero_inventaire, date_ajout, image_principale 
+        FROM objets 
+        ORDER BY date_ajout DESC 
+        LIMIT 5
+    ''').fetchall()
+    
+    conn.close()
+    
+    return render_template('admin/dashboard.html',
+                           total_objets=total_objets,
+                           stats_categories=stats_categories,
+                           stats_etats=stats_etats,
+                           derniers_objets=derniers_objets)
 
 @app.route('/admin/ajouter', methods=('GET', 'POST'))
 @login_required
@@ -620,6 +657,7 @@ def ajouter_objet():
         date_fabrication = request.form['date_fabrication']
         # url = request.form['donnees_complementaires']  <-- Ancienne gestion
         numero_inventaire = request.form['numero_inventaire']
+        origine = request.form.get('origine', '') # Nouveau champ Origine / Donateur
 
         # Collecte des attributs spécifiques
         attributs_specifiques = {}
@@ -660,16 +698,17 @@ def ajouter_objet():
             flash(error, 'warning' if 'vient d\'être utilisé' in error else 'error')
             # Renvoyer le formulaire avec les données déjà saisies
             return render_template('admin/ajouter.html',
-                                  objet={
-                                      'nom': nom,
-                                      'description': description,
-                                      'categorie': categorie,
-                                      'fabricant': fabricant,
-                                      'date_fabrication': date_fabrication,
-                                      # 'url': url,  <-- Plus utilisé
-                                      'numero_inventaire': numero_inventaire,
-                                      'attributs_specifiques': attributs_json
-                                  })
+                                                                        objet={
+                                                                        'nom': nom,
+                                                                        'description': description,
+                                                                        'categorie': categorie,
+                                                                        'fabricant': fabricant,
+                                                                        'date_fabrication': date_fabrication,
+                                                                        # 'url': url,  <-- Plus utilisé
+                                                                        'numero_inventaire': numero_inventaire,
+                                                                        'origine': origine,
+                                                                        'attributs_specifiques': attributs_json
+                                                                    })
         else:
             conn = get_db_connection()
 
@@ -684,8 +723,8 @@ def ajouter_objet():
             try:
                 # Insérer les informations de l'objet (sans l'URL dans la table principale)
                 cursor = conn.execute(
-                    'INSERT INTO objets (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale, date_ajout, attributs_specifiques) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), attributs_json)
+                    'INSERT INTO objets (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale, date_ajout, attributs_specifiques, origine) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), attributs_json, origine)
                 )
 
                 objet_id = cursor.lastrowid
@@ -732,6 +771,7 @@ def ajouter_objet():
                                           'fabricant': fabricant,
                                           'date_fabrication': date_fabrication,
                                           'numero_inventaire': nouveau_numero,
+                                          'origine': origine,
                                           'attributs_specifiques': attributs_json
                                       })
             except Exception as e:
@@ -746,6 +786,7 @@ def ajouter_objet():
                                           'fabricant': fabricant,
                                           'date_fabrication': date_fabrication,
                                           'numero_inventaire': numero_inventaire,
+                                          'origine': origine,
                                           'attributs_specifiques': attributs_json
                                       })
 
@@ -784,6 +825,7 @@ def modifier_objet(id):
         # url = request.form['donnees_complementaires'] <-- Ancienne gestion
         numero_inventaire = request.form['numero_inventaire']
         etat = request.form.get('etat', '')  # Récupération de l'état de l'objet
+        origine = request.form.get('origine', '') # Nouveau champ Origine / Donateur
         version_soumise = int(request.form.get('version', 0))
 
         # Collecte des attributs spécifiques
@@ -837,6 +879,7 @@ def modifier_objet(id):
                 # 'url': url,
                 'numero_inventaire': numero_inventaire,
                 'etat': etat,  # Inclure l'état dans les données modifiées
+                'origine': origine,
                 'attributs_specifiques': attributs_json
             })
 
@@ -854,8 +897,8 @@ def modifier_objet(id):
             current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             conn.execute(
-                'UPDATE objets SET nom = ?, description = ?, categorie = ?, fabricant = ?, date_fabrication = ?, numero_inventaire = ?, image_principale = ?, attributs_specifiques = ?, etat = ?, date_modification = ?, version = version + 1 WHERE id = ? AND version = ?',
-                (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, attributs_json, etat, current_datetime, id, version_soumise)
+                'UPDATE objets SET nom = ?, description = ?, categorie = ?, fabricant = ?, date_fabrication = ?, numero_inventaire = ?, image_principale = ?, attributs_specifiques = ?, etat = ?, origine = ?, date_modification = ?, version = version + 1 WHERE id = ? AND version = ?',
+                (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, attributs_json, etat, origine, current_datetime, id, version_soumise)
             )
             
             # Mise à jour des liens : on supprime tout et on recrée (plus simple)
@@ -986,6 +1029,52 @@ def admin_security():
     login_status = get_login_attempts_status(get_db_connection)
 
     return render_template('admin/security.html', login_status=login_status)
+
+@app.route('/admin/export/csv')
+@login_required
+def export_csv():
+    """Génère et télécharge un export CSV complet de l'inventaire."""
+    import csv
+    import io
+    from flask import Response
+
+    conn = get_db_connection()
+    # Récupérer tous les objets
+    objets = conn.execute('SELECT * FROM objets ORDER BY id').fetchall()
+    conn.close()
+
+    # Créer un flux en mémoire pour le fichier CSV
+    output = io.StringIO()
+    # Définir le writer CSV (séparateur point-virgule pour Excel fr)
+    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+
+    # En-têtes des colonnes
+    headers = ['ID', 'Nom / Titre', 'Catégorie', 'Fabricant / Éditeur', 'Année', 'N° Inventaire', 'État', 'Origine / Donateur', 'Date d\'ajout']
+    writer.writerow(headers)
+
+    # Écrire les données
+    for obj in objets:
+        writer.writerow([
+            obj['id'],
+            obj['nom'],
+            obj['categorie'],
+            obj['fabricant'],
+            obj['date_fabrication'],
+            obj['numero_inventaire'],
+            obj['etat'],
+            obj['origine'],
+            obj['date_ajout']
+        ])
+
+    # Revenir au début du flux
+    output.seek(0)
+    
+    # Créer la réponse avec les bons en-têtes pour le téléchargement
+    return Response(
+        output.getvalue().encode('utf-8-sig'), # utf-8-sig pour qu'Excel reconnaisse les accents
+        mimetype="text/csv",
+        headers={"Content-disposition": f"attachment; filename=inventaire_ccnm_{datetime.now().strftime('%Y-%m-%d')}.csv"}
+    )
 
 @app.route('/objet/<int:id>/pdf')
 def generate_pdf(id):

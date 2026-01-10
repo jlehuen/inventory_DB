@@ -143,11 +143,12 @@ server {
         expires 30d;
     }
 
-    # Sécurisation des uploads (empêcher l'exécution de scripts)
+    # Sécurisation des uploads
+    # Nous servons les fichiers uploadés directement via Nginx pour la performance
+    # Attention : ne PAS mettre 'Content-Disposition attachment' sinon les images ne s'affichent pas
     location /static/database/uploads {
         alias /var/www/inventaire_ccnm/database/uploads;
         expires 30d;
-        add_header Content-Disposition "attachment";
     }
 }
 ```
