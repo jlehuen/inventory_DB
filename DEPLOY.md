@@ -56,10 +56,11 @@ nano .env
 ```
 
 Modifiez les valeurs suivantes :
-*   **`SECRET_KEY`** : GÉNÉREZ UNE CLÉ UNIQUE ! Ne laissez pas la valeur par défaut.
-    *   *Commande pour générer une clé :* `python3 -c 'import os; print(os.urandom(24).hex())'`
-*   `FLASK_ENV` : Mettez `production`.
-*   `ADMIN_PASSWORD` : Définissez un mot de passe fort pour le compte admin par défaut.
+
+- **`SECRET_KEY`** : GÉNÉREZ UNE CLÉ UNIQUE ! Ne laissez pas la valeur par défaut.
+    - *Commande pour générer une clé :* `python3 -c 'import os; print(os.urandom(24).hex())'`
+- `FLASK_ENV` : Mettez `production`.
+- `ADMIN_PASSWORD` : Définissez un mot de passe fort pour le compte admin par défaut.
 
 ## 4. Permissions et Dossiers
 
@@ -112,7 +113,7 @@ sudo systemctl start inventaire
 sudo systemctl enable inventaire
 sudo systemctl status inventaire
 ```
-*(Vérifiez que le statut est "active (running)")*
+*Vérifiez que le statut est "active (running)"*
 
 ## 6. Configuration de Nginx
 
@@ -162,7 +163,7 @@ sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-## 6.5 Configuration du Pare-feu (UFW)
+### Configuration du Pare-feu (UFW)
 
 Si le pare-feu UFW est activé sur votre serveur, autorisez le trafic Nginx :
 
@@ -185,6 +186,7 @@ Suivez les instructions à l'écran. Certbot modifiera automatiquement la config
 ## 8. Maintenance et Mises à jour
 
 ### Mettre à jour l'application
+
 Pour mettre à jour le code :
 
 ```bash
@@ -198,7 +200,9 @@ sudo systemctl restart inventaire
 ```
 
 ### Sauvegardes
+
 Les données importantes sont :
+
 1.  Le fichier de base de données : `database/database.db`
 2.  Les images uploadées : `database/uploads/`
 
