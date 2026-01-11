@@ -483,6 +483,12 @@ main.wide-container {
     font-family: 'Effra Std Bold', sans-serif;
 }
 
+.categorie-count {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
 /* Admin styles */
 .admin-section, .admin-form-section {
     background-color: white;

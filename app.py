@@ -551,6 +551,11 @@ def categories():
             'SELECT DISTINCT categorie FROM objets'
         ).fetchall()]
 
+    # Récupérer le nombre d'objets par catégorie
+    counts = {row['categorie']: row['count'] for row in conn.execute(
+        'SELECT categorie, COUNT(*) as count FROM objets GROUP BY categorie'
+    ).fetchall()}
+
     conn.close()
 
     # Combiner les deux sources
@@ -559,13 +564,16 @@ def categories():
     # Formater pour le template
     categories_list = []
     for cat in all_categories:
+        # Récupérer le nombre d'objets
+        count = counts.get(cat, 0)
+        
         # Vérifier si la catégorie est dans le JSON pour récupérer l'icône
         if cat in json_categories_info:
             icon = json_categories_info[cat].get('icon', 'fa-microscope')  # Icône par défaut si non spécifiée
-            categories_list.append({'categorie': cat, 'icon': icon})
+            categories_list.append({'categorie': cat, 'icon': icon, 'count': count})
         else:
             # Catégorie personnalisée sans icône dans le JSON
-            categories_list.append({'categorie': cat, 'icon': 'fa-microscope'})
+            categories_list.append({'categorie': cat, 'icon': 'fa-microscope', 'count': count})
 
     return render_template('categories.html', categories=categories_list)
 
