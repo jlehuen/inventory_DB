@@ -1241,7 +1241,7 @@ def add_security_headers(response):
     # Empêche le navigateur de deviner le type MIME
     response.headers['X-Content-Type-Options'] = 'nosniff'
     # Politique de sécurité du contenu (CSP) - version plus permissive pour le développement
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://cdnjs.cloudflare.com data:;"
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://cdnjs.cloudflare.com data:;"
     # Référant
     response.headers['Referrer-Policy'] = 'same-origin'
     return response
