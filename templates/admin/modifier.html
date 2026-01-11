@@ -238,8 +238,27 @@
         }
     }
 
+    // Fonction pour mettre à jour les libellés selon la catégorie
+    function mettreAJourLibelles() {
+        const categorie = document.getElementById('categorie').value;
+        const labelNom = document.querySelector('label[for="nom"]');
+        const labelFabricant = document.querySelector('label[for="fabricant"]');
+        const labelAnnee = document.querySelector('label[for="date_fabrication"]');
+
+        if (categorie === 'Livres') {
+            labelNom.textContent = "Titre *";
+            labelFabricant.textContent = "Éditeur";
+            labelAnnee.textContent = "Année d'édition";
+        } else {
+            labelNom.textContent = "Nom (ou titre) *";
+            labelFabricant.textContent = "Fabricant (ou éditeur)";
+            labelAnnee.textContent = "Année de sortie (ou d'édition)";
+        }
+    }
+
     // Fonction pour charger les attributs spécifiques selon la catégorie
     function chargerAttributsSpecifiques() {
+        mettreAJourLibelles();
         const categorie = document.getElementById('categorie').value;
         const container = document.getElementById('attributs-specifiques-container');
 

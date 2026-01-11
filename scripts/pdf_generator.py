@@ -222,16 +222,17 @@ def generate_object_pdf(objet, images, liens, base_url):
     elements.append(Paragraph("Données générales", heading2_style))
 
     # Adapter les libellés selon la catégorie (comme sur la vue HTML)
-    is_book = objet['categorie'] == 'Livre'
+    is_book = objet['categorie'] == 'Livres'
     label_nom = "Titre" if is_book else "Modèle"
     label_fabricant = "Éditeur" if is_book else "Fabricant"
+    label_annee = "Année d'édition" if is_book else "Année de sortie"
 
     # Utiliser des paragraphes pour toutes les cellules de données
     data = [
         ["Catégorie", create_paragraph(objet['categorie'] or "Non spécifiée", table_cell_style)],
         [label_nom, create_paragraph(objet['nom'], table_cell_style)],
         [label_fabricant, create_paragraph(objet['fabricant'] or "Non spécifié", table_cell_style)],
-        ["Année de sortie", create_paragraph(objet['date_fabrication'] or "Non spécifiée", table_cell_style)],
+        [label_annee, create_paragraph(objet['date_fabrication'] or "Non spécifiée", table_cell_style)],
         ["Informations", links_cell_content],
         ["État de l'objet", create_paragraph(objet['etat'] or "Non spécifié", table_cell_style)],
         ["Numéro d'inventaire", create_paragraph(objet['numero_inventaire'] or "Non spécifié", table_cell_style)]
@@ -260,7 +261,7 @@ def generate_object_pdf(objet, images, liens, base_url):
 
             if attributs:
                 # Titre de section adapté à la catégorie
-                section_title = "Informations bibliographiques" if objet['categorie'] == 'Livre' else "Caractéristiques techniques"
+                section_title = "Informations bibliographiques" if objet['categorie'] == 'Livres' else "Caractéristiques techniques"
                 elements.append(Paragraph(section_title, heading2_style))
 
                 # Préparer les données pour le tableau

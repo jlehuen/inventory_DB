@@ -55,19 +55,19 @@
                 <h2>Données générales</h2>
                 <table class="info-table">
                     <tr>
-                        <th>{% if objet['categorie'] == 'Livre' %}Titre{% else %}Modèle{% endif %} :</th>
+                        <th>{% if objet['categorie'] == 'Livres' %}Titre{% else %}Modèle{% endif %} :</th>
                         <td>{{ objet['nom'] }}</td>
                     </tr>
                     <tr>
-                        <th>{% if objet['categorie'] == 'Livre' %}Éditeur{% else %}Fabricant{% endif %} :</th>
+                        <th>{% if objet['categorie'] == 'Livres' %}Éditeur{% else %}Fabricant{% endif %} :</th>
                         <td>{{ objet['fabricant'] or '-' }}</td>
                     </tr>
                     <tr>
-                        <th>Année de sortie :</th>
+                        <th>{% if objet['categorie'] == 'Livres' %}Année d'édition{% else %}Année de sortie{% endif %} :</th>
                         <td>{{ objet['date_fabrication'] or '-' }}</td>
                     </tr>
                     <tr>
-                        <th>Informations :</th>
+                        <th>Références :</th>
                         <td>
                             {% if liens %}
                                 <ul style="list-style-type: disc; padding-left: 1.2rem; margin: 0;">
@@ -89,10 +89,6 @@
                         <th>État de l'objet :</th>
                         <td>{{ objet['etat'] or '-' }}</td>
                     </tr>
-                    <tr>
-                        <th>Numéro d'inventaire :</th>
-                        <td>{{ objet['numero_inventaire'] or '-' }}</td>
-                    </tr>
 
                     {% if current_user.is_authenticated %}
                     <tr class="admin-only-row" style="background-color: #fdf2e9;">
@@ -101,6 +97,10 @@
                     </tr>
                     {% endif %}
 
+                    <tr>
+                        <th>Numéro d'inventaire :</th>
+                        <td>{{ objet['numero_inventaire'] or '-' }}</td>
+                    </tr>
                     <tr>
                         <th>Date d'inventaire :</th>
                         <td>{{ objet['date_ajout'] }}</td>
@@ -116,7 +116,7 @@
 
             {% if objet['attributs_specifiques'] %}
             <div class="info-section">
-                <h2>{% if objet['categorie'] == 'Livre' %}Informations bibliographiques{% else %}Caractéristiques techniques{% endif %}</h2>
+                <h2>{% if objet['categorie'] == 'Livres' %}Informations bibliographiques{% else %}Caractéristiques techniques{% endif %}</h2>
                 <table class="info-table">
                     {% set attrs = objet['attributs_specifiques']|from_json %}
                     {% set ordered_attrs = [] %}

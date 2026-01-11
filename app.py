@@ -582,6 +582,16 @@ def objets_par_categorie(categorie):
     """Affiche les objets appartenant à une catégorie spécifique."""
     conn = get_db_connection()
     objets = conn.execute('SELECT * FROM objets WHERE categorie = ?', (categorie,)).fetchall()
+
+    # Stats par année pour cette catégorie (Répartition temporelle)
+    stats_annees = conn.execute('''
+        SELECT SUBSTR(date_fabrication, 1, 4) as annee, COUNT(*) as count
+        FROM objets
+        WHERE categorie = ? AND date_fabrication IS NOT NULL AND date_fabrication != ''
+        GROUP BY annee
+        ORDER BY annee ASC
+    ''', (categorie,)).fetchall()
+
     conn.close()
 
     # Récupérer la description de la catégorie depuis le JSON
@@ -590,7 +600,7 @@ def objets_par_categorie(categorie):
     if categorie in categories_info and 'description' in categories_info[categorie]:
         description = categories_info[categorie]['description']
 
-    return render_template('categorie.html', objets=objets, categorie=categorie, description=description)
+    return render_template('categorie.html', objets=objets, categorie=categorie, description=description, stats_annees=stats_annees)
 
 @app.route('/collection')
 def collection():
