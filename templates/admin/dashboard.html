@@ -59,6 +59,14 @@
                 </div>
             </div>
 
+            <!-- Graphique Années -->
+            <div class="content-card">
+                <h3><i class="fas fa-calendar-alt"></i> Répartition par année</h3>
+                <div class="chart-container">
+                    <canvas id="anneesChart"></canvas>
+                </div>
+            </div>
+
             <!-- États (Santé de la collection) -->
             <div class="content-card">
                 <h3><i class="fas fa-heartbeat"></i> État de la collection</h3>
@@ -268,14 +276,14 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Préparation des données pour le graphique
+    // --- Graphique Catégories ---
     const categoriesData = [
         {% for cat in stats_categories %}
             { label: "{{ cat['categorie'] }}", count: {{ cat['count'] }} },
         {% endfor %}
     ];
 
-    const ctx = document.getElementById('categoriesChart').getContext('2d');
+    const ctxCat = document.getElementById('categoriesChart').getContext('2d');
     
     // Couleurs douces pour le graphique
     const colors = [
@@ -283,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
         '#34495e', '#1abc9c', '#e67e22', '#95a5a6'
     ];
 
-    new Chart(ctx, {
+    new Chart(ctxCat, {
         type: 'doughnut',
         data: {
             labels: categoriesData.map(d => d.label),
@@ -303,6 +311,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             },
             cutout: '65%'
+        }
+    });
+
+    // --- Graphique Années ---
+    const anneesData = [
+        {% for annee in stats_annees %}
+            { label: "{{ annee['annee'] }}", count: {{ annee['count'] }} },
+        {% endfor %}
+    ];
+
+    const ctxAnnee = document.getElementById('anneesChart').getContext('2d');
+    
+    new Chart(ctxAnnee, {
+        type: 'bar',
+        data: {
+            labels: anneesData.map(d => d.label),
+            datasets: [{
+                label: 'Nombre d\'objets',
+                data: anneesData.map(d => d.count),
+                backgroundColor: '#6c5ce7',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
         }
     });
 });

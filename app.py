@@ -630,6 +630,15 @@ def admin():
         ORDER BY date_ajout DESC 
         LIMIT 5
     ''').fetchall()
+
+    # 5. Stats par année (Répartition temporelle)
+    stats_annees = conn.execute('''
+        SELECT SUBSTR(date_fabrication, 1, 4) as annee, COUNT(*) as count
+        FROM objets
+        WHERE date_fabrication IS NOT NULL AND date_fabrication != ''
+        GROUP BY annee
+        ORDER BY annee ASC
+    ''').fetchall()
     
     conn.close()
     
@@ -637,7 +646,8 @@ def admin():
                            total_objets=total_objets,
                            stats_categories=stats_categories,
                            stats_etats=stats_etats,
-                           derniers_objets=derniers_objets)
+                           derniers_objets=derniers_objets,
+                           stats_annees=stats_annees)
 
 @app.route('/admin/ajouter', methods=('GET', 'POST'))
 @login_required
