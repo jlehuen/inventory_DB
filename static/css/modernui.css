@@ -213,6 +213,17 @@ select:focus {
     transform: scale(1.2);
 }
 
+.categorie-count {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: -0.5rem;
+    font-weight: 400;
+}
+
+.categorie-card:hover .categorie-count {
+    color: var(--secondary-color);
+}
+
 /* Détail de l'objet */
 .objet-detail {
     border-radius: 8px;

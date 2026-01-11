@@ -14,6 +14,7 @@
                 <i class="fas {{ cat['icon'] }}"></i>
             </div>
             <h2>{{ cat['categorie'] }}</h2>
+            <p class="categorie-count">{{ cat['count'] }} {% if cat['count'] > 1 %}objets{% else %}objet{% endif %}</p>
         </a>
         {% endfor %}
     </div>
