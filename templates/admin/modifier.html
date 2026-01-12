@@ -121,10 +121,12 @@
 
         <div class="form-group">
             <label>Images supplémentaires</label>
+            <p class="text-muted small"><i class="fas fa-info-circle"></i> Glissez-déposez les images pour modifier leur ordre d'affichage.</p>
             {% if images %}
-                <div class="current-images">
+                <div class="current-images" id="sortable-images">
                     {% for image in images %}
                     <div class="current-image-item" id="image-item-{{ image['id'] }}">
+                        <div class="handle"><i class="fas fa-grip-vertical"></i></div>
                         <img src="{{ url_for('static', filename=image['chemin']) }}" alt="Image {{ loop.index }}" class="thumbnail">
                         <div class="image-controls">
                             <input type="text" name="legende_{{ image['id'] }}" value="{{ image['legende'] }}" placeholder="Légende">
@@ -160,7 +162,23 @@
     </form>
 </section>
 
+<!-- SortableJS pour le drag & drop -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
 <script>
+    // Initialisation du tri des images
+    document.addEventListener('DOMContentLoaded', function() {
+        var el = document.getElementById('sortable-images');
+        if (el) {
+            Sortable.create(el, {
+                animation: 150,
+                handle: '.handle', // La poignée pour glisser
+                ghostClass: 'sortable-ghost', // Classe pour l'élément fantôme
+                dragClass: 'sortable-drag' // Classe pour l'élément en cours de déplacement
+            });
+        }
+    });
+
     // Variable pour stocker les attributs chargés depuis le JSON
     let categorieAttributs = {};
 

@@ -620,3 +620,33 @@ footer {
     text-overflow: ellipsis;
     max-width: 200px;
 }
+
+/* Styles pour le tri (Drag & Drop) des images */
+.handle {
+    cursor: grab;
+    color: #a0aec0;
+    margin-right: 10px;
+    font-size: 1.2rem;
+    padding: 5px;
+}
+
+.handle:hover {
+    color: var(--secondary-color);
+}
+
+.handle:active {
+    cursor: grabbing;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+    background-color: #f0f7ff;
+    border: 2px dashed var(--secondary-color);
+}
+
+.sortable-drag {
+    cursor: grabbing;
+    background-color: white;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    transform: rotate(2deg);
+}

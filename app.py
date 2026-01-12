@@ -982,10 +982,10 @@ def modifier_objet(id):
                     [id] + images_to_keep
                 )
 
-            # Mettre à jour les légendes des images existantes
-            for image_id in images_to_keep:
+            # Mettre à jour les légendes et l'ordre des images existantes
+            for index, image_id in enumerate(images_to_keep):
                 legende = request.form.get(f'legende_{image_id}', '')
-                conn.execute('UPDATE images SET legende = ? WHERE id = ?', (legende, image_id))
+                conn.execute('UPDATE images SET legende = ?, ordre = ? WHERE id = ?', (legende, index, image_id))
 
             # Traitement des nouvelles images
             if 'nouvelles_images' in request.files:
