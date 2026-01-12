@@ -7,13 +7,14 @@
         <h1>Musée Martial Vivet</h1>
         <p>Catalogue des collections du CCNM</p>
         <a href="{{ url_for('collection') }}" class="btn">Voir la collection</a>
+        <button id="btn-random" class="btn" style="margin-left: 10px;">3 Objets au hasard</button>
     </div>
 </section>
 
 <section id="objets" class="objets-section">
-    <h2>Derniers objets ajoutés</h2>
+    <h2 id="section-title">Derniers objets ajoutés</h2>
 
-    <div class="objets-grid">
+    <div class="objets-grid" id="objets-grid">
         {% for objet in objets %}
         <div class="objet-card">
             <a href="{{ url_for('detail_objet', id=objet['id']) }}">
@@ -66,5 +67,40 @@
     margin: 0 auto;
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnRandom = document.getElementById('btn-random');
+    const objetsGrid = document.getElementById('objets-grid');
+    const sectionTitle = document.getElementById('section-title');
+
+    if (btnRandom) {
+        btnRandom.addEventListener('click', function() {
+            // Indiquer le chargement
+            objetsGrid.style.opacity = '0.5';
+            
+            fetch('/random_object_fragment')
+                .then(response => response.text())
+                .then(html => {
+                    // Mettre à jour le titre
+                    sectionTitle.textContent = 'Objet au hasard';
+                    
+                    // Appliquer le centrage
+                    objetsGrid.classList.add('centered');
+                    
+                    // Remplacer le contenu de la grille
+                    objetsGrid.innerHTML = html;
+                    
+                    // Rétablir l'opacité
+                    objetsGrid.style.opacity = '1';
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    objetsGrid.style.opacity = '1';
+                });
+        });
+    }
+});
+</script>
 
 {% endblock %}

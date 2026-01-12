@@ -12,6 +12,7 @@ Il s'inspire de l'esprit du site [patstec.fr](https://www.patstec.fr) pour la pr
     *   **Éditeur de liens avancé** : Interface d'administration dédiée utilisant une application JavaScript robuste pour gérer les catégories de liens globaux.
 *   **Recherche avancée** : Recherche par mot-clé incluant le nom, la description, le fabricant, le numéro, l'année, les attributs spécifiques et désormais le contenu des liens web.
 *   **Numéros d'inventaire automatiques** : Génération automatique de numéros uniques (ex: `INV_IC2_0001`) avec gestion intelligente des conflits (réattribution automatique si le numéro est pris au dernier moment).
+*   **Affichage d'objets au hasard (AJAX)** : Découverte de la collection via un bouton permettant d'afficher aléatoirement 3 objets sans recharger la page.
 *   **Champs dynamiques** :
     *   Attributs spécifiques selon la catégorie (entièrement configurables via `static/categories.json`).
     *   Gestion de multiples liens web pour chaque objet.

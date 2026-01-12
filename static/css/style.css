@@ -199,7 +199,9 @@ main.wide-container {
 
 /* Buttons */
 .btn {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 0.7rem 1.5rem;
     background-color: var(--primary-color);
     color: white;
@@ -208,6 +210,9 @@ main.wide-container {
     cursor: pointer;
     border: none;
     transition: background-color 0.3s;
+    line-height: 1.2;
+    text-align: center;
+    vertical-align: middle;
 }
 
 .btn:hover {
@@ -277,6 +282,11 @@ main.wide-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 1.5rem;
+}
+
+.objets-grid.centered {
+    justify-content: center;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 320px));
 }
 
 .objet-card {

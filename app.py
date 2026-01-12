@@ -417,6 +417,38 @@ def logout():
     return redirect(url_for('index'))
 
 # Routes de l'application
+@app.route('/random_object_fragment')
+def random_object_fragment():
+    """Retourne le fragment HTML de trois objets au hasard."""
+    conn = get_db_connection()
+    objets = conn.execute('SELECT * FROM objets ORDER BY RANDOM() LIMIT 3').fetchall()
+    conn.close()
+
+    if not objets:
+        return '<p>Aucun objet dans la collection.</p>'
+
+    html_parts = []
+    for objet in objets:
+        image_style = ''
+        if objet['image_principale']:
+            image_url = url_for('static', filename=objet['image_principale'])
+            image_style = f'style="background-image: url(\'{image_url}\')"'
+        
+        html_parts.append(f'''
+        <div class="objet-card">
+            <a href="{url_for('detail_objet', id=objet['id'])}">
+                <div class="objet-image {'default-image' if not objet['image_principale'] else ''}" {image_style}></div>
+                <div class="objet-info">
+                    <h3>{objet['nom']}</h3>
+                    <p class="objet-categorie">{objet['categorie']}</p>
+                    <p class="objet-fabricant">{objet['fabricant']}</p>
+                </div>
+            </a>
+        </div>
+        ''')
+    
+    return "".join(html_parts)
+
 @app.route('/')
 def index():
     """Affiche la page d'accueil avec les derniers objets ajoutés."""
