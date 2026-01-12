@@ -3,14 +3,9 @@
         "categorie": "Bases de données nationales",
         "liens": [
             {
+                "description": "Mission nationale de sauvegarde et de valorisation du patrimoine scientifique et technique contemporain.",
                 "nom": "Patstec",
-                "url": "https://www.patstec.fr/",
-                "description": "Mission nationale de sauvegarde et de valorisation du patrimoine scientifique et technique contemporain."
-            },
-            {
-                "nom": "POP : la plateforme ouverte du patrimoine",
-                "url": "https://www.pop.culture.gouv.fr/",
-                "description": "Base de données du Ministère de la Culture regroupant les collections des musées de France."
+                "url": "https://www.patstec.fr/"
             }
         ]
     },
@@ -18,14 +13,19 @@
         "categorie": "Catalogues Informatiques",
         "liens": [
             {
-                "nom": "Old-Computers.com",
-                "url": "https://www.old-computers.com/",
-                "description": "L'un des plus grands musées en ligne dédiés aux anciens ordinateurs."
-            },
+                "description": "Base de données qui référence plus de 4000 calculatrices",
+                "nom": "Calcuseum",
+                "url": "http://www.calcuseum.com/"
+            }
+        ]
+    },
+    {
+        "categorie": "Émulateurs en ligne",
+        "liens": [
             {
-                "nom": "System-G",
-                "url": "http://www.system-cfg.com/",
-                "description": "Site français dédié à l'histoire de l'informatique et des ordinateurs personnels."
+                "description": "This is a TypeScript-based TRS-80 Model I and Model III emulator.",
+                "nom": "TRS-80 Emulator",
+                "url": "https://github.com/lkesteloot/trs80/tree/master/packages/trs80-emulator"
             }
         ]
     }

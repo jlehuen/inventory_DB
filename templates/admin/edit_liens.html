@@ -1,326 +1,283 @@
-{# templates/admin/edit_liens.html - Édition des liens utiles (Mode Formulaire) #}
 {% extends 'base.html' %}
 
-{% block title %}Gérer les liens utiles - Administration{% endblock %}
+{% block title %}Gestion des Liens - Administration{% endblock %}
 
 {% block content %}
-<div class="admin-container">
-    <div class="admin-header">
-        <h1><i class="fas fa-link"></i> Gérer les liens utiles</h1>
-        <a href="{{ url_for('admin') }}" class="btn-secondary">
-            <i class="fas fa-arrow-left"></i> Retour au tableau de bord
-        </a>
+<div class="admin-container" style="max-width: 1000px; margin: 0 auto; padding: 20px 20px 100px 20px;">
+    
+    <div class="admin-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px;">
+        <h1 style="color: #2c3e50; margin: 0;"><i class="fas fa-link"></i> Éditeur de Liens</h1>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('admin') }}" class="btn-secondary" style="background: #95a5a6; color: white; padding: 10px 15px; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+            <a href="{{ url_for('liens') }}" target="_blank" class="btn-secondary" style="background: #3498db; color: white; padding: 10px 15px; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                <i class="fas fa-eye"></i> Aperçu
+            </a>
+        </div>
     </div>
 
-    <form method="post" id="linksForm">
+    <!-- Zone d'erreur JS visible -->
+    <div id="js-error-zone" style="display:none; padding: 20px; background: #fee; color: #c0392b; border: 1px solid #e74c3c; border-radius: 4px; margin-bottom: 20px; white-space: pre-wrap; font-family: monospace;"></div>
+
+    <form method="POST" id="main-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <!-- Champ caché qui contiendra le JSON final envoyé au serveur -->
-        <input type="hidden" name="json_content" id="json_content" value="{{ json_content }}">
+        
+        <!-- Ce champ caché reçoit le JSON final -->
+        <textarea name="json_content" id="json-output" style="display:none;"></textarea>
 
-        <div id="categories-container">
-            <!-- Les catégories seront générées ici par JavaScript -->
+        <!-- Conteneur de l'application -->
+        <div id="editor-container">
+            <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                <i class="fas fa-spinner fa-spin fa-2x"></i><br>Chargement de l'interface...
+            </div>
         </div>
 
-        <div class="add-category-container">
-            <button type="button" class="btn-secondary btn-large" onclick="addCategory()">
-                <i class="fas fa-plus-circle"></i> Ajouter une nouvelle catégorie
+        <!-- Barre d'actions fixe en bas -->
+        <div class="form-actions-sticky" style="position: fixed; bottom: 0; left: 0; right: 0; background: #2c3e50; padding: 15px 20px; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; gap: 20px; z-index: 1000;">
+            <a href="{{ url_for('liens') }}" style="background: #95a5a6; color: white; border-radius: 4px; text-decoration: none; font-size: 16px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 220px; height: 50px; box-sizing: border-box; border: none; padding: 0 25px;">
+                <i class="fas fa-times"></i> annuler
+            </a>
+
+            <button type="submit" style="background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 220px; height: 50px; box-sizing: border-box; padding: 0 25px;">
+                <i class="fas fa-save"></i> enregistrer tout
             </button>
-        </div>
 
-        <div class="form-actions-sticky">
-            <button type="submit" class="btn-primary">
-                <i class="fas fa-save"></i> Enregistrer toutes les modifications
+            <button type="button" id="btn-add-cat" style="background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 220px; height: 50px; box-sizing: border-box; padding: 0 25px;">
+                <i class="fas fa-plus-circle"></i> nouvelle catégorie
             </button>
         </div>
     </form>
 </div>
 
-<!-- Template HTML pour une catégorie (utilisé par JS) -->
-<template id="category-template">
-    <div class="category-card" data-category-index="{index}">
-        <div class="category-header">
-            <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
-            <div class="input-group">
-                <label>Nom de la catégorie</label>
-                <input type="text" class="category-name" placeholder="Ex: Bases de données nationales" required>
-            </div>
-            <button type="button" class="btn-icon btn-delete" onclick="removeCategory(this)" title="Supprimer la catégorie">
-                <i class="fas fa-trash"></i>
-            </button>
-        </div>
-        
-        <div class="links-list">
-            <!-- Les liens seront insérés ici -->
-        </div>
-
-        <div class="category-footer">
-            <button type="button" class="btn-text" onclick="addLink(this)">
-                <i class="fas fa-plus"></i> Ajouter un lien dans cette catégorie
-            </button>
-        </div>
-    </div>
-</template>
-
-<!-- Template HTML pour un lien (utilisé par JS) -->
-<template id="link-template">
-    <div class="link-row">
-        <div class="link-inputs">
-            <div class="input-group half">
-                <input type="text" class="link-name" placeholder="Nom du site" required>
-            </div>
-            <div class="input-group half">
-                <input type="url" class="link-url" placeholder="URL (https://...)" required>
-            </div>
-            <div class="input-group full">
-                <input type="text" class="link-desc" placeholder="Courte description">
-            </div>
-        </div>
-        <button type="button" class="btn-icon btn-delete-link" onclick="removeLink(this)" title="Supprimer ce lien">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-</template>
-
-<style>
-    .admin-container {
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 20px 20px 80px 20px; /* Padding bas pour le bouton sticky */
-    }
-
-    .category-card {
-        background: white;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        margin-bottom: 25px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        overflow: hidden;
-    }
-
-    .category-header {
-        background: #f8f9fa;
-        padding: 15px;
-        border-bottom: 1px solid #e0e0e0;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .category-header .input-group { flex: 1; margin-bottom: 0; }
-    .category-header label { font-weight: bold; font-size: 0.85em; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block; }
-    .category-header input { font-size: 1.1em; font-weight: bold; color: #333; }
-
-    .links-list {
-        padding: 15px;
-    }
-
-    .link-row {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        padding: 10px;
-        background: #fff;
-        border: 1px dashed #ddd;
-        border-radius: 6px;
-        margin-bottom: 10px;
-        transition: background 0.2s;
-    }
-
-    .link-row:hover { background: #fafafa; }
-
-    .link-inputs {
-        flex: 1;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    .input-group.half { width: calc(50% - 5px); margin-bottom: 0; }
-    .input-group.full { width: 100%; margin-bottom: 0; }
-
-    .input-group input {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-    }
-
-    .input-group input:focus {
-        border-color: #4a90e2;
-        outline: none;
-    }
-
-    .btn-icon {
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: #999;
-        padding: 5px;
-        transition: color 0.2s;
-    }
-    .btn-icon:hover { color: #d32f2f; }
-    
-    .category-footer {
-        padding: 10px 15px;
-        background: #fcfcfc;
-        border-top: 1px solid #f0f0f0;
-    }
-
-    .btn-text {
-        background: none;
-        border: none;
-        color: #4a90e2;
-        font-weight: 500;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-    .btn-text:hover { text-decoration: underline; }
-
-    .add-category-container {
-        text-align: center;
-        margin-top: 30px;
-        padding: 20px;
-        border: 2px dashed #e0e0e0;
-        border-radius: 8px;
-    }
-
-    .btn-large { font-size: 1.1em; padding: 10px 20px; }
-
-    .form-actions-sticky {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: white;
-        padding: 15px;
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-        display: flex;
-        justify-content: center;
-        z-index: 100;
-    }
-
-    /* Utilitaires */
-    .drag-handle { color: #ccc; cursor: move; }
-
-    @media (max-width: 600px) {
-        .input-group.half { width: 100%; }
-        .link-row { flex-direction: column; }
-        .btn-delete-link { align-self: flex-end; }
-    }
-</style>
-
 <script>
-    // Initialisation
-    document.addEventListener('DOMContentLoaded', function() {
-        const jsonInput = document.getElementById('json_content');
-        let data = [];
-        
+(function() {
+    // Gestionnaire d'erreur global pour cette page
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+        var errorZone = document.getElementById('js-error-zone');
+        if (errorZone) {
+            errorZone.style.display = 'block';
+            errorZone.innerHTML = '<strong>Erreur JavaScript :</strong><br>' + msg + '<br>Ligne : ' + lineNo;
+            console.error('Erreur capturée :', error);
+        }
+        return false;
+    };
+
+    try {
+        console.log("Démarrage de l'éditeur de liens...");
+
+        // 1. Initialisation des données
+        var initialData = [];
         try {
-            data = JSON.parse(jsonInput.value);
+            {% if json_data is not none %}
+                initialData = {{ json_data | tojson | safe }};
+            {% endif %}
         } catch (e) {
-            console.error("Erreur parsing JSON initial", e);
-            data = [];
+            console.error("Erreur lors de l'injection des données serveur :", e);
+            throw new Error("Impossible de lire les données initiales du serveur.");
         }
 
-        const container = document.getElementById('categories-container');
-        
-        // Rendu initial
-        data.forEach(cat => {
-            renderCategory(cat, container);
-        });
+        // Sécurité : fallback sur un tableau vide
+        if (!initialData || !Array.isArray(initialData)) {
+            console.warn("Données initiales vides ou invalides, démarrage à vide.");
+            initialData = [];
+        }
 
-        // Gestion de la soumission du formulaire
-        document.getElementById('linksForm').addEventListener('submit', function(e) {
-            // Reconstruire le JSON à partir du DOM
-            const newData = [];
-            const categoryCards = document.querySelectorAll('.category-card');
-            
-            categoryCards.forEach(card => {
-                const catName = card.querySelector('.category-name').value;
-                const links = [];
-                const linkRows = card.querySelectorAll('.link-row');
+        // État global de l'application (Single Source of Truth)
+        var appState = JSON.parse(JSON.stringify(initialData)); // Deep copy simple
+
+        // Références DOM
+        var container = document.getElementById('editor-container');
+        var outputField = document.getElementById('json-output');
+        var btnAddCat = document.getElementById('btn-add-cat');
+        var form = document.getElementById('main-form');
+
+        // --- Moteur de Rendu ---
+
+        function render() {
+            // Sauvegarde l'état actuel dans le champ caché à chaque rendu
+            updateOutput();
+
+            // Vide le conteneur
+            container.innerHTML = '';
+
+            if (appState.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding: 50px 20px; color: #95a5a6; background: #f8f9fa; border: 2px dashed #bdc3c7; border-radius: 8px;">
+                        <i class="fas fa-folder-open" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i><br>
+                        <h3>Aucune catégorie</h3>
+                        <p>Cliquez sur "Nouvelle Catégorie" en bas pour commencer.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Génère le HTML pour chaque catégorie
+            appState.forEach(function(category, catIndex) {
+                var catBlock = document.createElement('div');
+                catBlock.className = 'cat-block';
+                catBlock.style.cssText = 'background: white; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow: hidden;';
+
+                // En-tête de catégorie
+                var header = document.createElement('div');
+                header.style.cssText = 'background: #f1f4f6; padding: 15px; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: space-between; gap: 15px;';
+                header.innerHTML = `
+                    <div style="flex-grow: 1; display: flex; align-items: center; gap: 10px;">
+                        <div style="color: #34495e; cursor: move;"><i class="fas fa-grip-vertical"></i></div>
+                        <div style="flex-grow: 1;">
+                            <label style="display: block; font-size: 0.75em; font-weight: bold; color: #7f8c8d; text-transform: uppercase; margin-bottom: 3px;">NOM DE LA CATÉGORIE</label>
+                            <input type="text" class="input-cat-name" value="${escapeHtml(category.categorie || '')}"
+                                   style="width: 100%; font-size: 1.1em; font-weight: bold; border: 1px solid #ccc; padding: 8px; border-radius: 4px;"
+                                   placeholder="Ex: Bases de données">
+                        </div>
+                    </div>
+                    <button type="button" class="btn-delete-cat" title="Supprimer cette catégorie" style="background: white; border: 1px solid #e74c3c; color: #e74c3c; width: 36px; height: 36px; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                `;
                 
-                linkRows.forEach(row => {
-                    links.push({
-                        nom: row.querySelector('.link-name').value,
-                        url: row.querySelector('.link-url').value,
-                        description: row.querySelector('.link-desc').value
-                    });
-                });
+                // Événements En-tête
+                header.querySelector('.input-cat-name').oninput = function(e) {
+                    appState[catIndex].categorie = e.target.value;
+                    updateOutput(); // Mise à jour silencieuse du champ caché
+                };
+                
+                header.querySelector('.btn-delete-cat').onclick = function() {
+                    if(confirm("Supprimer la catégorie \"" + (appState[catIndex].categorie || 'Sans nom') + "\" et tous ses liens ?")) {
+                        appState.splice(catIndex, 1);
+                        render();
+                    }
+                };
 
-                // Ne pas sauvegarder les catégories vides sans nom
-                if (catName.trim()) {
-                    newData.push({
-                        categorie: catName,
-                        liens: links
+                catBlock.appendChild(header);
+
+                // Liste des liens
+                var linksContainer = document.createElement('div');
+                linksContainer.style.cssText = 'padding: 15px; background: #fff;';
+
+                if (!category.liens || category.liens.length === 0) {
+                    linksContainer.innerHTML = '<div style="text-align: center; color: #bdc3c7; padding: 10px; font-style: italic;">Aucun lien dans cette catégorie</div>';
+                } else {
+                    category.liens.forEach(function(link, linkIndex) {
+                        var linkRow = document.createElement('div');
+                        linkRow.style.cssText = 'display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; background: #fdfdfd; border: 1px solid #eee; border-radius: 6px; margin-bottom: 10px; align-items: flex-start;';
+                        
+                        linkRow.innerHTML = `
+                            <div style="flex: 1 1 200px; display: flex; flex-direction: column; gap: 8px;">
+                                <input type="text" class="input-link-nom" value="${escapeHtml(link.nom || '')}" placeholder="Nom du site" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-weight: 500;">
+                                <input type="text" class="input-link-url" value="${escapeHtml(link.url || '')}" placeholder="URL (https://...)" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; color: #2980b9; font-family: monospace;">
+                            </div>
+                            <div style="flex: 2 1 300px;">
+                                <textarea class="input-link-desc" placeholder="Description courte..." rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical; min-height: 76px;">${escapeHtml(link.description || '')}</textarea>
+                            </div>
+                            <button type="button" class="btn-delete-link" title="Supprimer ce lien" style="background: none; border: none; color: #95a5a6; cursor: pointer; padding: 5px; margin-top: 5px;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+
+                        // Événements Lien
+                        linkRow.querySelector('.input-link-nom').oninput = function(e) {
+                            appState[catIndex].liens[linkIndex].nom = e.target.value;
+                            updateOutput();
+                        };
+                        linkRow.querySelector('.input-link-url').oninput = function(e) {
+                            appState[catIndex].liens[linkIndex].url = e.target.value;
+                            updateOutput();
+                        };
+                        linkRow.querySelector('.input-link-desc').oninput = function(e) {
+                            appState[catIndex].liens[linkIndex].description = e.target.value;
+                            updateOutput();
+                        };
+                        linkRow.querySelector('.btn-delete-link').onclick = function() {
+                            appState[catIndex].liens.splice(linkIndex, 1);
+                            render(); // Re-render nécessaire car on supprime un élément du tableau
+                        };
+
+                        linksContainer.appendChild(linkRow);
                     });
                 }
-            });
 
-            // Mettre à jour le champ caché
-            jsonInput.value = JSON.stringify(newData, null, 4);
-        });
-    });
+                catBlock.appendChild(linksContainer);
 
-    function renderCategory(catData, container) {
-        const template = document.getElementById('category-template');
-        const clone = template.content.cloneNode(true);
-        const card = clone.querySelector('.category-card');
-        
-        // Remplir le nom
-        card.querySelector('.category-name').value = catData.categorie || '';
-        
-        // Conteneur de liens
-        const linksList = card.querySelector('.links-list');
-        
-        // Remplir les liens
-        if (catData.liens && catData.liens.length > 0) {
-            catData.liens.forEach(link => {
-                renderLink(link, linksList);
+                // Footer (Bouton Ajout Lien)
+                var footer = document.createElement('div');
+                footer.style.cssText = 'padding: 10px 15px; background: #fcfcfc; border-top: 1px solid #f0f0f0;';
+                
+                var btnAddLink = document.createElement('button');
+                btnAddLink.type = 'button';
+                btnAddLink.innerHTML = '<i class="fas fa-plus"></i> Ajouter un lien';
+                btnAddLink.style.cssText = 'background: none; border: none; color: #3498db; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 4px;';
+                btnAddLink.onmouseover = function() { this.style.backgroundColor = '#ebf5fb'; };
+                btnAddLink.onmouseout = function() { this.style.backgroundColor = 'transparent'; };
+                
+                btnAddLink.onclick = function() {
+                    if (!appState[catIndex].liens) appState[catIndex].liens = [];
+                    appState[catIndex].liens.push({ nom: '', url: '', description: '' });
+                    render();
+                };
+
+                footer.appendChild(btnAddLink);
+                catBlock.appendChild(footer);
+
+                container.appendChild(catBlock);
             });
         }
 
-        container.appendChild(card);
-    }
+        // --- Utilitaires ---
 
-    function renderLink(linkData, container) {
-        const template = document.getElementById('link-template');
-        const clone = template.content.cloneNode(true);
-        
-        clone.querySelector('.link-name').value = linkData.nom || '';
-        clone.querySelector('.link-url').value = linkData.url || '';
-        clone.querySelector('.link-desc').value = linkData.description || '';
-        
-        container.appendChild(clone);
-    }
-
-    // Fonctions d'action appelées par les boutons
-    function addCategory() {
-        const container = document.getElementById('categories-container');
-        renderCategory({ categorie: '', liens: [] }, container);
-        // Scroll vers le bas
-        window.scrollTo(0, document.body.scrollHeight);
-    }
-
-    function removeCategory(btn) {
-        if (confirm('Voulez-vous vraiment supprimer cette catégorie et tous ses liens ?')) {
-            const card = btn.closest('.category-card');
-            card.remove();
+        function updateOutput() {
+            // Sérialisation propre de l'état vers le champ caché
+            outputField.value = JSON.stringify(appState, null, 4);
         }
+
+        function escapeHtml(text) {
+            if (!text) return "";
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // --- Initialisation ---
+
+        // Bouton Ajout Catégorie Global
+        btnAddCat.onclick = function() {
+            appState.push({
+                categorie: "",
+                liens: []
+            });
+            render();
+            // Scroll vers le bas
+            setTimeout(function() {
+                window.scrollTo(0, document.body.scrollHeight);
+            }, 100);
+        };
+
+        // Interception finale du submit pour être sûr à 100%
+        form.onsubmit = function() {
+            updateOutput();
+            // Vérification basique
+            if (outputField.value.length < 2) {
+                alert("Erreur : Les données semblent vides.");
+                return false;
+            }
+            return true;
+        };
+
+        // Premier rendu
+        render();
+        console.log("Éditeur initialisé avec " + appState.length + " catégories.");
+
+    } catch (err) {
+        // Capture des erreurs synchrones dans le bloc principal
+        var errorZone = document.getElementById('js-error-zone');
+        errorZone.style.display = 'block';
+        errorZone.innerHTML = '<strong>Erreur d\'initialisation :</strong><br>' + err.message;
+        console.error(err);
     }
 
-    function addLink(btn) {
-        const card = btn.closest('.category-card');
-        const list = card.querySelector('.links-list');
-        renderLink({ nom: '', url: '', description: '' }, list);
-    }
-
-    function removeLink(btn) {
-        const row = btn.closest('.link-row');
-        row.remove();
-    }
+})();
 </script>
 {% endblock %}

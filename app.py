@@ -633,9 +633,11 @@ def admin_edit_liens():
     
     if request.method == 'POST':
         json_content = request.form.get('json_content')
+        data = []
         try:
             # Vérifier que c'est du JSON valide
             parsed_json = json.loads(json_content)
+            data = parsed_json
             
             # Sauvegarder avec une jolie mise en forme
             with open(json_path, 'w', encoding='utf-8') as f:
@@ -646,13 +648,20 @@ def admin_edit_liens():
         except json.JSONDecodeError as e:
             flash(f'Erreur de syntaxe JSON : {e}', 'error')
             # On renvoie le contenu erroné pour que l'utilisateur puisse corriger sans tout perdre
-            return render_template('admin/edit_liens.html', json_content=json_content)
+            # On passe json_data=None pour éviter que le JS n'essaie d'écraser le textarea avec des données invalides
+            return render_template('admin/edit_liens.html', json_content=json_content, json_data=None)
         except Exception as e:
             app.logger.error(f"Erreur lors de la sauvegarde des liens: {e}")
             flash(f'Une erreur est survenue lors de l\'enregistrement : {e}', 'error')
-            return render_template('admin/edit_liens.html', json_content=json_content)
+            # Tentative de récupération des données si possible
+            try:
+                 data = json.loads(json_content)
+            except:
+                 data = None
+            return render_template('admin/edit_liens.html', json_content=json_content, json_data=data)
 
     # Chargement initial (GET)
+    data = []
     try:
         if os.path.exists(json_path):
             with open(json_path, 'r', encoding='utf-8') as f:
@@ -673,12 +682,14 @@ def admin_edit_liens():
                     ]
                 }
             ]
+            data = default_data
             json_content = json.dumps(default_data, indent=4, ensure_ascii=False)
     except Exception as e:
         app.logger.error(f"Erreur lecture liens.json: {e}")
         json_content = "[]"
+        data = []
 
-    return render_template('admin/edit_liens.html', json_content=json_content)
+    return render_template('admin/edit_liens.html', json_content=json_content, json_data=data)
 
 
 @app.route('/admin')
