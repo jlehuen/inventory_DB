@@ -685,8 +685,16 @@ main.wide-container {
     display: inline-flex;
     align-items: center;
     color: var(--secondary-color);
-    word-break: break-all;
     transition: color 0.3s;
+    max-width: 100%;
+}
+
+.url-text {
+    display: inline-block;
+    max-width: 45ch; /* Limite à environ 45 caractères */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .url-link:hover {
@@ -694,9 +702,14 @@ main.wide-container {
     text-decoration: underline;
 }
 
+.url-link:hover .url-text {
+    text-decoration: underline;
+}
+
 .url-link i {
     margin-left: 0.4rem;
     font-size: 0.8rem;
+    flex-shrink: 0;
 }
 
 /* Flash messages */

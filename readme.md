@@ -6,12 +6,12 @@ Il s'inspire de l'esprit du site [patstec.fr](https://www.patstec.fr) pour la pr
 
 ## Fonctionnalités
 
-*   **Catalogue en ligne** : Affichage des objets avec images, descriptions détaillées, état, et liens d'informations multiples.
+*   **Catalogue en ligne** : Affichage des objets avec images, descriptions détaillées, état, et liens web multiples.
 *   **Recherche avancée** : Recherche par mot-clé incluant le nom, la description, le fabricant, le numéro, l'année, et même les attributs spécifiques.
 *   **Numéros d'inventaire automatiques** : Génération automatique de numéros uniques (ex: `INV_IC2_0001`) avec gestion intelligente des conflits (réattribution automatique si le numéro est pris au dernier moment).
 *   **Champs dynamiques** :
     *   Attributs spécifiques selon la catégorie (entièrement configurables via `static/categories.json`).
-    *   Gestion de multiples liens d'informations (URL) pour chaque objet.
+    *   Gestion de multiples liens web pour chaque objet.
     *   Galerie d'images avec gestion de l'ordre et des légendes.
     *   **Chargement facilité** : Support du glisser-déposer (Drag & Drop) pour toutes les images.
 *   **Administration** : 
@@ -117,6 +117,30 @@ inventaire_CCNM/
     ├── database.db             # Base de données SQLite (créée au lancement)
     └── uploads/                # Stockage des images
 ```
+
+## Modèle de Données
+
+L'application utilise une base de données SQLite relationnelle définie dans `static/schema.sql`.
+
+### Tables Principales
+
+*   **`objets`** : Table centrale contenant les fiches d'inventaire.
+    *   `numero_inventaire` : Identifiant unique (ex: INV_IC2_0001).
+    *   `attributs_specifiques` : Champ texte stockant les données dynamiques (JSON) définies dans `categories.json`.
+    *   `version` : Entier incrémenté à chaque modification pour gérer le *verrouillage optimiste*.
+    *   `image_principale` : Chemin relatif vers le fichier image principal.
+
+*   **`images`** : Images supplémentaires (Relation 1:N avec `objets`).
+    *   Permet de gérer une galerie complète par objet avec ordre et légendes.
+
+*   **`liens`** : Références web (Relation 1:N avec `objets`).
+    *   Stocke les URLs externes vers des documentations, manuels ou vidéos.
+
+### Tables de Sécurité
+
+*   **`users`** : Comptes administrateurs (mots de passe hachés).
+*   **`login_attempts`** : Protection contre les attaques par force brute (blocage IP temporaire).
+*   **`auth_logs`** : Historique des connexions et actions sensibles.
 
 ## Maintenance
 
