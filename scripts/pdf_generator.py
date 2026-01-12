@@ -235,7 +235,7 @@ def generate_object_pdf(objet, images, liens, base_url):
         [label_annee, create_paragraph(objet['date_fabrication'] or "Non spécifiée", table_cell_style)],
         ["Informations", links_cell_content],
         ["État de l'objet", create_paragraph(objet['etat'] or "Non spécifié", table_cell_style)],
-        ["Numéro d'inventaire", create_paragraph(objet['numero_inventaire'] or "Non spécifié", table_cell_style)]
+        ["Numéro", create_paragraph(objet['numero_inventaire'] or "Non spécifié", table_cell_style)]
     ]
 
     t = Table(data, colWidths=[4*cm, 10*cm])

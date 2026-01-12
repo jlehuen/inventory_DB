@@ -1083,7 +1083,7 @@ def export_csv():
     writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
 
     # En-têtes des colonnes
-    headers = ['ID', 'Nom / Titre', 'Catégorie', 'Fabricant / Éditeur', 'Année', 'N° Inventaire', 'État', 'Origine / Donateur', 'Date d\'ajout']
+    headers = ['ID', 'Nom / Titre', 'Catégorie', 'Fabricant / Éditeur', 'Année', 'N° Inventaire', 'État', 'Donateur', 'Date d\'ajout']
     writer.writerow(headers)
 
     # Écrire les données

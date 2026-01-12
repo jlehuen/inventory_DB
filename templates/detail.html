@@ -92,13 +92,13 @@
 
                     {% if current_user.is_authenticated %}
                     <tr class="admin-only-row" style="background-color: #fdf2e9;">
-                        <th><i class="fas fa-user-secret"></i> Origine / Donateur :</th>
+                        <th>Donateur :</th>
                         <td>{{ objet['origine'] or '-' }} <em style="font-size: 0.8em; color: #666;">(Visible uniquement par admin)</em></td>
                     </tr>
                     {% endif %}
 
                     <tr>
-                        <th>Numéro d'inventaire :</th>
+                        <th>Numéro :</th>
                         <td>{{ objet['numero_inventaire'] or '-' }}</td>
                     </tr>
                     <tr>
