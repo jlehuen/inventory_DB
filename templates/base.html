@@ -30,6 +30,7 @@
                 <li><a href="{{ url_for('admin') if current_user.is_authenticated else url_for('index') }}">Accueil</a></li>
                 <li><a href="{{ url_for('categories') }}">Catégories</a></li>
                 <li><a href="{{ url_for('collection') }}">Collection</a></li>
+                <li><a href="{{ url_for('liens') }}">Liens</a></li>
                 {% if current_user.is_authenticated %}
                     <li><a href="{{ url_for('admin_security') }}">Sécurité</a></li>
                 {% endif %}

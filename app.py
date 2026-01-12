@@ -615,6 +615,72 @@ def collection():
     return render_template('collection.html', objets=objets)
 
 
+@app.route('/liens')
+def liens():
+    """Affiche la page des liens utiles."""
+    try:
+        with open('static/liens.json', 'r', encoding='utf-8') as f:
+            liens_data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        liens_data = []
+    return render_template('liens.html', categories_liens=liens_data)
+
+@app.route('/admin/liens/edit', methods=['GET', 'POST'])
+@login_required
+def admin_edit_liens():
+    """Permet à l'administrateur d'éditer le fichier JSON des liens utiles."""
+    json_path = os.path.join('static', 'liens.json')
+    
+    if request.method == 'POST':
+        json_content = request.form.get('json_content')
+        try:
+            # Vérifier que c'est du JSON valide
+            parsed_json = json.loads(json_content)
+            
+            # Sauvegarder avec une jolie mise en forme
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(parsed_json, f, indent=4, ensure_ascii=False)
+                
+            flash('La liste des liens a été mise à jour avec succès.', 'success')
+            return redirect(url_for('liens'))
+        except json.JSONDecodeError as e:
+            flash(f'Erreur de syntaxe JSON : {e}', 'error')
+            # On renvoie le contenu erroné pour que l'utilisateur puisse corriger sans tout perdre
+            return render_template('admin/edit_liens.html', json_content=json_content)
+        except Exception as e:
+            app.logger.error(f"Erreur lors de la sauvegarde des liens: {e}")
+            flash(f'Une erreur est survenue lors de l\'enregistrement : {e}', 'error')
+            return render_template('admin/edit_liens.html', json_content=json_content)
+
+    # Chargement initial (GET)
+    try:
+        if os.path.exists(json_path):
+            with open(json_path, 'r', encoding='utf-8') as f:
+                # On charge et redump pour garantir un formatage propre dans l'éditeur
+                data = json.load(f)
+                json_content = json.dumps(data, indent=4, ensure_ascii=False)
+        else:
+            # Modèle par défaut si le fichier n'existe pas
+            default_data = [
+                {
+                    "categorie": "Exemple de catégorie",
+                    "liens": [
+                        {
+                            "nom": "Nom du site",
+                            "url": "https://exemple.com",
+                            "description": "Description du site"
+                        }
+                    ]
+                }
+            ]
+            json_content = json.dumps(default_data, indent=4, ensure_ascii=False)
+    except Exception as e:
+        app.logger.error(f"Erreur lecture liens.json: {e}")
+        json_content = "[]"
+
+    return render_template('admin/edit_liens.html', json_content=json_content)
+
+
 @app.route('/admin')
 @login_required
 def admin():

@@ -1,0 +1,32 @@
+[
+    {
+        "categorie": "Bases de données nationales",
+        "liens": [
+            {
+                "nom": "Patstec",
+                "url": "https://www.patstec.fr/",
+                "description": "Mission nationale de sauvegarde et de valorisation du patrimoine scientifique et technique contemporain."
+            },
+            {
+                "nom": "POP : la plateforme ouverte du patrimoine",
+                "url": "https://www.pop.culture.gouv.fr/",
+                "description": "Base de données du Ministère de la Culture regroupant les collections des musées de France."
+            }
+        ]
+    },
+    {
+        "categorie": "Catalogues Informatiques",
+        "liens": [
+            {
+                "nom": "Old-Computers.com",
+                "url": "https://www.old-computers.com/",
+                "description": "L'un des plus grands musées en ligne dédiés aux anciens ordinateurs."
+            },
+            {
+                "nom": "System-G",
+                "url": "http://www.system-cfg.com/",
+                "description": "Site français dédié à l'histoire de l'informatique et des ordinateurs personnels."
+            }
+        ]
+    }
+]

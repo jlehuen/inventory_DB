@@ -1,0 +1,326 @@
+{# templates/admin/edit_liens.html - Édition des liens utiles (Mode Formulaire) #}
+{% extends 'base.html' %}
+
+{% block title %}Gérer les liens utiles - Administration{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1><i class="fas fa-link"></i> Gérer les liens utiles</h1>
+        <a href="{{ url_for('admin') }}" class="btn-secondary">
+            <i class="fas fa-arrow-left"></i> Retour au tableau de bord
+        </a>
+    </div>
+
+    <form method="post" id="linksForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <!-- Champ caché qui contiendra le JSON final envoyé au serveur -->
+        <input type="hidden" name="json_content" id="json_content" value="{{ json_content }}">
+
+        <div id="categories-container">
+            <!-- Les catégories seront générées ici par JavaScript -->
+        </div>
+
+        <div class="add-category-container">
+            <button type="button" class="btn-secondary btn-large" onclick="addCategory()">
+                <i class="fas fa-plus-circle"></i> Ajouter une nouvelle catégorie
+            </button>
+        </div>
+
+        <div class="form-actions-sticky">
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-save"></i> Enregistrer toutes les modifications
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Template HTML pour une catégorie (utilisé par JS) -->
+<template id="category-template">
+    <div class="category-card" data-category-index="{index}">
+        <div class="category-header">
+            <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
+            <div class="input-group">
+                <label>Nom de la catégorie</label>
+                <input type="text" class="category-name" placeholder="Ex: Bases de données nationales" required>
+            </div>
+            <button type="button" class="btn-icon btn-delete" onclick="removeCategory(this)" title="Supprimer la catégorie">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        
+        <div class="links-list">
+            <!-- Les liens seront insérés ici -->
+        </div>
+
+        <div class="category-footer">
+            <button type="button" class="btn-text" onclick="addLink(this)">
+                <i class="fas fa-plus"></i> Ajouter un lien dans cette catégorie
+            </button>
+        </div>
+    </div>
+</template>
+
+<!-- Template HTML pour un lien (utilisé par JS) -->
+<template id="link-template">
+    <div class="link-row">
+        <div class="link-inputs">
+            <div class="input-group half">
+                <input type="text" class="link-name" placeholder="Nom du site" required>
+            </div>
+            <div class="input-group half">
+                <input type="url" class="link-url" placeholder="URL (https://...)" required>
+            </div>
+            <div class="input-group full">
+                <input type="text" class="link-desc" placeholder="Courte description">
+            </div>
+        </div>
+        <button type="button" class="btn-icon btn-delete-link" onclick="removeLink(this)" title="Supprimer ce lien">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+</template>
+
+<style>
+    .admin-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px 20px 80px 20px; /* Padding bas pour le bouton sticky */
+    }
+
+    .category-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+    .category-header {
+        background: #f8f9fa;
+        padding: 15px;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .category-header .input-group { flex: 1; margin-bottom: 0; }
+    .category-header label { font-weight: bold; font-size: 0.85em; text-transform: uppercase; color: #666; margin-bottom: 5px; display: block; }
+    .category-header input { font-size: 1.1em; font-weight: bold; color: #333; }
+
+    .links-list {
+        padding: 15px;
+    }
+
+    .link-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px;
+        background: #fff;
+        border: 1px dashed #ddd;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        transition: background 0.2s;
+    }
+
+    .link-row:hover { background: #fafafa; }
+
+    .link-inputs {
+        flex: 1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .input-group.half { width: calc(50% - 5px); margin-bottom: 0; }
+    .input-group.full { width: 100%; margin-bottom: 0; }
+
+    .input-group input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .input-group input:focus {
+        border-color: #4a90e2;
+        outline: none;
+    }
+
+    .btn-icon {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #999;
+        padding: 5px;
+        transition: color 0.2s;
+    }
+    .btn-icon:hover { color: #d32f2f; }
+    
+    .category-footer {
+        padding: 10px 15px;
+        background: #fcfcfc;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .btn-text {
+        background: none;
+        border: none;
+        color: #4a90e2;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .btn-text:hover { text-decoration: underline; }
+
+    .add-category-container {
+        text-align: center;
+        margin-top: 30px;
+        padding: 20px;
+        border: 2px dashed #e0e0e0;
+        border-radius: 8px;
+    }
+
+    .btn-large { font-size: 1.1em; padding: 10px 20px; }
+
+    .form-actions-sticky {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        padding: 15px;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: center;
+        z-index: 100;
+    }
+
+    /* Utilitaires */
+    .drag-handle { color: #ccc; cursor: move; }
+
+    @media (max-width: 600px) {
+        .input-group.half { width: 100%; }
+        .link-row { flex-direction: column; }
+        .btn-delete-link { align-self: flex-end; }
+    }
+</style>
+
+<script>
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+        const jsonInput = document.getElementById('json_content');
+        let data = [];
+        
+        try {
+            data = JSON.parse(jsonInput.value);
+        } catch (e) {
+            console.error("Erreur parsing JSON initial", e);
+            data = [];
+        }
+
+        const container = document.getElementById('categories-container');
+        
+        // Rendu initial
+        data.forEach(cat => {
+            renderCategory(cat, container);
+        });
+
+        // Gestion de la soumission du formulaire
+        document.getElementById('linksForm').addEventListener('submit', function(e) {
+            // Reconstruire le JSON à partir du DOM
+            const newData = [];
+            const categoryCards = document.querySelectorAll('.category-card');
+            
+            categoryCards.forEach(card => {
+                const catName = card.querySelector('.category-name').value;
+                const links = [];
+                const linkRows = card.querySelectorAll('.link-row');
+                
+                linkRows.forEach(row => {
+                    links.push({
+                        nom: row.querySelector('.link-name').value,
+                        url: row.querySelector('.link-url').value,
+                        description: row.querySelector('.link-desc').value
+                    });
+                });
+
+                // Ne pas sauvegarder les catégories vides sans nom
+                if (catName.trim()) {
+                    newData.push({
+                        categorie: catName,
+                        liens: links
+                    });
+                }
+            });
+
+            // Mettre à jour le champ caché
+            jsonInput.value = JSON.stringify(newData, null, 4);
+        });
+    });
+
+    function renderCategory(catData, container) {
+        const template = document.getElementById('category-template');
+        const clone = template.content.cloneNode(true);
+        const card = clone.querySelector('.category-card');
+        
+        // Remplir le nom
+        card.querySelector('.category-name').value = catData.categorie || '';
+        
+        // Conteneur de liens
+        const linksList = card.querySelector('.links-list');
+        
+        // Remplir les liens
+        if (catData.liens && catData.liens.length > 0) {
+            catData.liens.forEach(link => {
+                renderLink(link, linksList);
+            });
+        }
+
+        container.appendChild(card);
+    }
+
+    function renderLink(linkData, container) {
+        const template = document.getElementById('link-template');
+        const clone = template.content.cloneNode(true);
+        
+        clone.querySelector('.link-name').value = linkData.nom || '';
+        clone.querySelector('.link-url').value = linkData.url || '';
+        clone.querySelector('.link-desc').value = linkData.description || '';
+        
+        container.appendChild(clone);
+    }
+
+    // Fonctions d'action appelées par les boutons
+    function addCategory() {
+        const container = document.getElementById('categories-container');
+        renderCategory({ categorie: '', liens: [] }, container);
+        // Scroll vers le bas
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function removeCategory(btn) {
+        if (confirm('Voulez-vous vraiment supprimer cette catégorie et tous ses liens ?')) {
+            const card = btn.closest('.category-card');
+            card.remove();
+        }
+    }
+
+    function addLink(btn) {
+        const card = btn.closest('.category-card');
+        const list = card.querySelector('.links-list');
+        renderLink({ nom: '', url: '', description: '' }, list);
+    }
+
+    function removeLink(btn) {
+        const row = btn.closest('.link-row');
+        row.remove();
+    }
+</script>
+{% endblock %}
