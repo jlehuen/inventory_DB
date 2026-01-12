@@ -12,7 +12,7 @@
 
     <!-- Actions Rapides -->
     <div class="quick-actions">
-        <a href="{{ url_for('ajouter_objet') }}" class="action-card primary">
+        <a href="{{ url_for('ajouter_objet') }}" class="action-card">
             <div class="icon"><i class="fas fa-plus-circle"></i></div>
             <div class="details">
                 <h3>Ajouter</h3>
@@ -29,8 +29,8 @@
         <a href="{{ url_for('admin_edit_liens') }}" class="action-card">
             <div class="icon"><i class="fas fa-link"></i></div>
             <div class="details">
-                <h3>Liens</h3>
-                <p>Gérer les ressources</p>
+                <h3>Gérer</h3>
+                <p>Les ressources web</p>
             </div>
         </a>
         <a href="{{ url_for('export_csv') }}" class="action-card">
@@ -72,20 +72,6 @@
                 <div class="chart-container">
                     <canvas id="anneesChart"></canvas>
                 </div>
-            </div>
-
-            <!-- États (Santé de la collection) -->
-            <div class="content-card">
-                <h3><i class="fas fa-heartbeat"></i> État de la collection</h3>
-                <ul class="stats-list">
-                    {% for stat in stats_etats %}
-                    <li>
-                        <span class="label">{{ stat['etat'] }}</span>
-                        <span class="count">{{ stat['count'] }}</span>
-                        <div class="bar" style="width: {{ (stat['count'] / total_objets * 100)|round }}%"></div>
-                    </li>
-                    {% endfor %}
-                </ul>
             </div>
         </div>
 
