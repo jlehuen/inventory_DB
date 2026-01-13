@@ -1267,7 +1267,8 @@ def generate_cartel(id):
         abort(404)
 
     # Générer le PDF du cartel
-    pdf_buffer = pdf_generator.generate_cartel_pdf(objet)
+    base_url = request.url_root
+    pdf_buffer = pdf_generator.generate_cartel_pdf(objet, base_url)
 
     return send_file(
         pdf_buffer,

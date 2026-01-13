@@ -349,29 +349,67 @@ def generate_object_pdf(objet, images, liens, base_url):
     buffer.seek(0)
     return buffer
 
-def generate_cartel_pdf(objet):
+
+def generate_cartel_pdf(objet, base_url):
     """
     Génère une étiquette (cartel) au format 15x10 cm pour un objet.
     
     Args:
         objet: Dictionnaire contenant les détails de l'objet
+        base_url: URL de base pour le QR code
         
     Returns:
         Objet BytesIO contenant le PDF généré
     """
     buffer = io.BytesIO()
     
+    # Génération du QR Code
+    qr_buffer = io.BytesIO()
+    try:
+        clean_base_url = base_url.rstrip('/')
+        object_url = f"{clean_base_url}/objet/{objet['id']}"
+        
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(object_url)
+        qr.make(fit=True)
+        img_qr = qr.make_image(fill_color="black", back_color="white")
+        img_qr.save(qr_buffer, format='PNG')
+        qr_buffer.seek(0)
+    except Exception as e:
+        print(f"Erreur génération QR Code cartel: {e}")
+        qr_buffer = None
+
     # Dimensions du cartel : 15cm x 10cm
     cartel_size = (15*cm, 10*cm)
     
+    # Callback pour dessiner le QR Code
+    def on_cartel_page(canvas, doc):
+        canvas.saveState()
+        if qr_buffer:
+            # Positionnement en haut à droite
+            qr_size = 2.2*cm
+            # Marges doc = 0.5cm. On le place dans le coin en haut à droite de la zone contenu
+            # x = largeur page - marge droite - taille QR
+            x_pos = 15*cm - 0.5*cm - qr_size
+            # y = hauteur page - marge haut - taille QR
+            y_pos = 10*cm - 0.5*cm - qr_size + 0.2*cm # Un petit ajustement vers le haut pour aligner avec le titre
+            
+            canvas.drawImage(ImageReader(qr_buffer), x_pos, y_pos, width=qr_size, height=qr_size)
+        canvas.restoreState()
+
     # Marges réduites pour maximiser l'espace
     doc = SimpleDocTemplate(
         buffer,
         pagesize=cartel_size,
-        leftMargin=1*cm,
-        rightMargin=1*cm,
-        topMargin=1*cm,
-        bottomMargin=1*cm
+        leftMargin=0.5*cm,
+        rightMargin=0.5*cm,
+        topMargin=0.5*cm,
+        bottomMargin=0.5*cm
     )
     
     styles = getSampleStyleSheet()
@@ -384,7 +422,8 @@ def generate_cartel_pdf(objet):
         leading=18,
         spaceAfter=6,
         textColor=colors.black,
-        alignment=0 # Gauche
+        alignment=0, # Gauche
+        rightIndent=2.5*cm # Laisser de la place pour le QR code
     )
     
     subtitle_style = ParagraphStyle(
@@ -393,7 +432,8 @@ def generate_cartel_pdf(objet):
         fontSize=12,
         leading=14,
         spaceAfter=10,
-        textColor=colors.darkgrey
+        textColor=colors.darkgrey,
+        rightIndent=2.5*cm # Laisser de la place pour le QR code aussi ici si besoin
     )
     
     body_style = ParagraphStyle(
@@ -431,7 +471,6 @@ def generate_cartel_pdf(objet):
     if objet['attributs_specifiques']:
         try:
             attributs = json.loads(objet['attributs_specifiques'])
-            specs_text = []
             
             # Récupération et tri des attributs comme dans la fiche principale
             ordered_attrs = []
@@ -448,18 +487,35 @@ def generate_cartel_pdf(objet):
             
             ordered_attrs.sort(key=lambda x: x[2])
             
-            # Construction de la chaîne de caractéristiques
-            # On en prend quelques unes pour ne pas déborder
-            for label, val, _ in ordered_attrs[:5]: # Max 5 caractéristiques
-                specs_text.append(f"<b>{label}:</b> {val}")
+            # Construction du tableau de caractéristiques
+            table_data = []
+            
+            # Construction des lignes du tableau (Max 6 pour ne pas déborder du cartel 10cm)
+            for label, val, _ in ordered_attrs[:6]:
+                table_data.append([
+                    Paragraph(f"<b>{label} :</b>", specs_style),
+                    Paragraph(str(val), specs_style)
+                ])
                 
-            if specs_text:
-                elements.append(Spacer(1, 0.2*cm))
-                elements.append(Paragraph(" | ".join(specs_text), specs_style))
+            if table_data:
+                elements.append(Spacer(1, 0.3*cm))
+                # Utilisation d'un tableau pour simuler l'alignement par tabulation
+                # Colonne 1 pour le libellé, Colonne 2 pour la valeur
+                t = Table(table_data, colWidths=[3.5*cm, 10.5*cm])
+                t.setStyle(TableStyle([
+                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                    ('TOPPADDING', (0, 0), (-1, -1), 1),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
+                ]))
+                elements.append(t)
                 
-        except Exception:
+        except Exception as e:
+            print(f"Erreur rendu caractéristiques cartel : {e}")
             pass # Ignorer les erreurs de parsing ici
             
-    doc.build(elements)
+    doc.build(elements, onFirstPage=on_cartel_page)
     buffer.seek(0)
     return buffer
