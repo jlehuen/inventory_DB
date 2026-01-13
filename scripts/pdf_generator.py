@@ -461,7 +461,7 @@ def generate_cartel_pdf(objet, base_url):
     # 2. Fabricant et Année
     fabricant = objet['fabricant'] or "Fabricant inconnu"
     annee = objet['date_fabrication'] or "Année inconnue"
-    elements.append(Paragraph(f"<b>{fabricant}</b> - {annee}", subtitle_style))
+    elements.append(Paragraph(f"<b>{fabricant}</b> ({annee})", subtitle_style))
     
     # 3. Description (Complète)
     if objet['description']:
@@ -493,22 +493,27 @@ def generate_cartel_pdf(objet, base_url):
             # Construction des lignes du tableau (Max 6 pour ne pas déborder du cartel 10cm)
             for label, val, _ in ordered_attrs[:6]:
                 table_data.append([
-                    Paragraph(f"<b>{label} :</b>", specs_style),
+                    Paragraph(f"<b>{label}</b>", specs_style),
                     Paragraph(str(val), specs_style)
                 ])
                 
             if table_data:
                 elements.append(Spacer(1, 0.3*cm))
-                # Utilisation d'un tableau pour simuler l'alignement par tabulation
-                # Colonne 1 pour le libellé, Colonne 2 pour la valeur
-                t = Table(table_data, colWidths=[3.5*cm, 10.5*cm])
+                
+                # Largeur totale disponible = 15cm (page) - 1cm (marges G+D) = 14cm
+                # Répartition : 4.5cm pour le libellé, 9.5cm pour la valeur
+                col_widths = [4.5*cm, 9.5*cm]
+                
+                t = Table(table_data, colWidths=col_widths)
                 t.setStyle(TableStyle([
                     ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 0),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('GRID', (0, 0), (-1, -1), 0.25, colors.grey),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 4),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 4),
                     ('TOPPADDING', (0, 0), (-1, -1), 1),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+                    ('BACKGROUND', (0, 0), (0, -1), colors.whitesmoke), # Optionnel : léger gris pour la colonne titre pour plus de lisibilité
                 ]))
                 elements.append(t)
                 
