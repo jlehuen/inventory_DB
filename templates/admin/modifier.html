@@ -6,9 +6,9 @@
 
 {% block content %}
 <section class="admin-form-section">
-    <div class="admin-form-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #eee;">
-        <h1 style="margin: 0; border-bottom: none;">Modification de la fiche</h1>
-        <div class="form-actions-top">
+    <div class="view-header">
+        <h1>Modification de la fiche</h1>
+        <div class="view-actions">
             <a href="{{ url_for('collection') }}" class="btn secondary">Annuler</a>
             <button type="button" class="btn primary" onclick="document.querySelector('.admin-form').submit();">Enregistrer</button>
         </div>
@@ -153,12 +153,10 @@
         <div class="form-group">
             <label>Ajouter de nouvelles images</label>
             <div class="image-upload-container" id="nouvelles-images-container">
-                <div class="image-upload-item">
-                    <input type="file" name="nouvelles_images" accept="image/*">
-                    <input type="text" name="nouvelle_legende_0" placeholder="Légende (optionnelle)">
-                    <button type="button" class="btn-small" onclick="ajouterNouvelleImage()">+</button>
-                </div>
             </div>
+            <button type="button" class="btn secondary" style="margin-top: 10px;" onclick="ajouterNouvelleImage()">
+                <i class="fas fa-plus"></i> Ajouter une image
+            </button>
         </div>
     </form>
 </section>

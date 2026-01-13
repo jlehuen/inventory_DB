@@ -6,7 +6,13 @@
 
 {% block content %}
 <section class="admin-form-section">
-    <h1>Ajouter un nouvel objet</h1>
+    <div class="view-header">
+        <h1>Ajouter un nouvel objet</h1>
+        <div class="view-actions">
+            <a href="{{ url_for('collection') }}" class="btn secondary">Annuler</a>
+            <button type="button" class="btn primary" onclick="document.querySelector('.admin-form').submit();">Enregistrer</button>
+        </div>
+    </div>
 
     <form method="post" enctype="multipart/form-data" class="admin-form">
         <div class="form-group">
@@ -90,17 +96,10 @@
         <div class="form-group images-supplementaires">
             <label>Images supplémentaires</label>
             <div class="image-upload-container" id="images-container">
-                <div class="image-upload-item">
-                    <input type="file" name="images_supplementaires" accept="image/*">
-                    <input type="text" name="legende_0" placeholder="Légende (optionnelle)">
-                    <button type="button" class="btn-small" onclick="ajouterChampImage()">+</button>
-                </div>
             </div>
-        </div>
-
-        <div class="form-actions">
-            <a href="{{ url_for('collection') }}" class="btn secondary">Annuler</a>
-            <button type="submit" class="btn primary">Ajouter</button>
+            <button type="button" class="btn secondary" style="margin-top: 10px;" onclick="ajouterChampImage()">
+                <i class="fas fa-plus"></i> Ajouter une image
+            </button>
         </div>
     </form>
 </section>
