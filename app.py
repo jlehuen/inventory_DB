@@ -1255,6 +1255,27 @@ def generate_pdf(id):
         mimetype='application/pdf'
     )
 
+@app.route('/objet/<int:id>/cartel')
+@login_required
+def generate_cartel(id):
+    """Génère et sert le cartel (étiquette) de l'objet au format PDF."""
+    conn = get_db_connection()
+    objet = conn.execute('SELECT * FROM objets WHERE id = ?', (id,)).fetchone()
+    conn.close()
+
+    if objet is None:
+        abort(404)
+
+    # Générer le PDF du cartel
+    pdf_buffer = pdf_generator.generate_cartel_pdf(objet)
+
+    return send_file(
+        pdf_buffer,
+        as_attachment=True,
+        download_name=f"Cartel-{objet['nom']}.pdf",
+        mimetype='application/pdf'
+    )
+
 # Séparation des fonctions GET et POST pour le nettoyage
 @app.route('/admin/nettoyage', methods=['GET'])
 @login_required

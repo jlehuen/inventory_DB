@@ -348,3 +348,118 @@ def generate_object_pdf(objet, images, liens, base_url):
     # Réinitialiser la position du curseur au début du buffer
     buffer.seek(0)
     return buffer
+
+def generate_cartel_pdf(objet):
+    """
+    Génère une étiquette (cartel) au format 15x10 cm pour un objet.
+    
+    Args:
+        objet: Dictionnaire contenant les détails de l'objet
+        
+    Returns:
+        Objet BytesIO contenant le PDF généré
+    """
+    buffer = io.BytesIO()
+    
+    # Dimensions du cartel : 15cm x 10cm
+    cartel_size = (15*cm, 10*cm)
+    
+    # Marges réduites pour maximiser l'espace
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=cartel_size,
+        leftMargin=1*cm,
+        rightMargin=1*cm,
+        topMargin=1*cm,
+        bottomMargin=1*cm
+    )
+    
+    styles = getSampleStyleSheet()
+    
+    # Styles personnalisés pour le cartel
+    title_style = ParagraphStyle(
+        'CartelTitle',
+        parent=styles['Heading1'],
+        fontSize=16,
+        leading=18,
+        spaceAfter=6,
+        textColor=colors.black,
+        alignment=0 # Gauche
+    )
+    
+    subtitle_style = ParagraphStyle(
+        'CartelSubtitle',
+        parent=styles['Normal'],
+        fontSize=12,
+        leading=14,
+        spaceAfter=10,
+        textColor=colors.darkgrey
+    )
+    
+    body_style = ParagraphStyle(
+        'CartelBody',
+        parent=styles['Normal'],
+        fontSize=10,
+        leading=12,
+        spaceAfter=8,
+        alignment=4 # Justifié
+    )
+    
+    specs_style = ParagraphStyle(
+        'CartelSpecs',
+        parent=styles['Normal'],
+        fontSize=9,
+        leading=10,
+        textColor=colors.HexColor('#444444')
+    )
+
+    elements = []
+    
+    # 1. Nom de l'objet
+    elements.append(Paragraph(objet['nom'], title_style))
+    
+    # 2. Fabricant et Année
+    fabricant = objet['fabricant'] or "Fabricant inconnu"
+    annee = objet['date_fabrication'] or "Année inconnue"
+    elements.append(Paragraph(f"<b>{fabricant}</b> - {annee}", subtitle_style))
+    
+    # 3. Description (Complète)
+    if objet['description']:
+        elements.append(Paragraph(objet['description'], body_style))
+    
+    # 4. Caractéristiques techniques (Attributs spécifiques)
+    if objet['attributs_specifiques']:
+        try:
+            attributs = json.loads(objet['attributs_specifiques'])
+            specs_text = []
+            
+            # Récupération et tri des attributs comme dans la fiche principale
+            ordered_attrs = []
+            for key, value in attributs.items():
+                if not key.startswith('ordre_') and not key.startswith('label_'):
+                    if isinstance(value, dict) and 'valeur' in value:
+                        display_value = value['valeur']
+                        order = value.get('ordre', 999)
+                        display_key = value.get('label', key.replace('_', ' ').capitalize())
+                        ordered_attrs.append((display_key, display_value, order))
+                    else:
+                        display_key = key.replace('_', ' ').capitalize()
+                        ordered_attrs.append((display_key, value, 999))
+            
+            ordered_attrs.sort(key=lambda x: x[2])
+            
+            # Construction de la chaîne de caractéristiques
+            # On en prend quelques unes pour ne pas déborder
+            for label, val, _ in ordered_attrs[:5]: # Max 5 caractéristiques
+                specs_text.append(f"<b>{label}:</b> {val}")
+                
+            if specs_text:
+                elements.append(Spacer(1, 0.2*cm))
+                elements.append(Paragraph(" | ".join(specs_text), specs_style))
+                
+        except Exception:
+            pass # Ignorer les erreurs de parsing ici
+            
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
