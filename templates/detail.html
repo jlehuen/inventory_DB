@@ -8,8 +8,21 @@
 {% block content %}
 <section class="objet-detail">
     <div class="objet-detail-header">
-        <h1>{{ objet['nom'] }}</h1>
-        <p class="objet-categorie">Catégorie: <a href="{{ url_for('objets_par_categorie', categorie=objet['categorie']) }}">{{ objet['categorie'] }}</a></p>
+        <div class="header-main-info">
+            <h1>{{ objet['nom'] }}</h1>
+            <p class="objet-categorie">Catégorie: <a href="{{ url_for('objets_par_categorie', categorie=objet['categorie']) }}">{{ objet['categorie'] }}</a></p>
+        </div>
+        <div class="objet-actions">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('collection') }}" class="btn"><i class="fas fa-arrow-left"></i> Retour à la liste</a>
+                <a href="{{ url_for('modifier_objet', id=objet['id']) }}" class="btn primary"><i class="fas fa-edit"></i> Editer la fiche</a>
+            {% else %}
+                <a href="{{ url_for('collection') }}" class="btn"><i class="fas fa-arrow-left"></i> Retour à la liste</a>
+            {% endif %}
+            <a href="{{ url_for('generate_pdf', id=objet['id']) }}" class="btn primary" target="_blank">
+                <i class="fas fa-file-pdf"></i> Télécharger PDF
+            </a>
+        </div>
     </div>
 
     <div class="objet-detail-content">
@@ -145,18 +158,6 @@
             {% endif %}
 
         </div>
-    </div>
-
-    <div class="objet-nav">
-        {% if current_user.is_authenticated %}
-            <a href="{{ url_for('collection') }}" class="btn"><i class="fas fa-arrow-left"></i> Retour à la liste</a>
-            <a href="{{ url_for('modifier_objet', id=objet['id']) }}" class="btn primary"><i class="fas fa-edit"></i> Editer la fiche</a>
-        {% else %}
-            <a href="{{ url_for('collection') }}" class="btn"><i class="fas fa-arrow-left"></i> Retour à la liste</a>
-        {% endif %}
-        <a href="{{ url_for('generate_pdf', id=objet['id']) }}" class="btn primary" target="_blank">
-            <i class="fas fa-file-pdf"></i> Télécharger PDF
-        </a>
     </div>
 </section>
 
