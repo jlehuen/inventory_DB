@@ -892,7 +892,7 @@ def ajouter_objet():
                 conn.close()
                 app.logger.info(f'Objet "{nom}" ajouté par {current_user.username}')
                 flash('Objet ajouté avec succès !', 'success')
-                return redirect(url_for('admin'))
+                return redirect(url_for('detail_objet', id=objet_id))
             
             except sqlite3.IntegrityError:
                 # En cas de concurrence critique où le check Python est passé mais la base a bloqué
@@ -1115,7 +1115,7 @@ def modifier_objet(id):
             conn.close()
             app.logger.info(f'Objet "{nom}" (ID: {id}) modifié par {current_user.username}')
             flash('Objet modifié avec succès !', 'success')
-            return redirect(url_for('admin'))
+            return redirect(url_for('detail_objet', id=id))
 
     conn.close()
     return render_template('admin/modifier.html', objet=objet, images=images, liens=liens)

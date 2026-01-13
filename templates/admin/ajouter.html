@@ -10,7 +10,7 @@
         <h1>Ajouter un nouvel objet</h1>
         <div class="view-actions">
             <a href="{{ url_for('collection') }}" class="btn secondary">Annuler</a>
-            <button type="button" class="btn primary" onclick="document.querySelector('.admin-form').submit();">Enregistrer</button>
+            <button type="button" class="btn save" onclick="document.querySelector('.admin-form').submit();">Enregistrer</button>
         </div>
     </div>
 
@@ -89,12 +89,14 @@
         </div>
 
         <div class="form-group">
-            <label for="image_principale">Image principale</label>
+            <h3>Image principale</h3>
+            <br/>
             <input type="file" id="image_principale" name="image_principale" accept="image/*">
         </div>
 
         <div class="form-group images-supplementaires">
-            <label>Images supplémentaires</label>
+            <h3>Images supplémentaires</h3>
+            <br/>
             <div class="image-upload-container" id="images-container">
             </div>
             <button type="button" class="btn secondary" style="margin-top: 10px;" onclick="ajouterChampImage()">

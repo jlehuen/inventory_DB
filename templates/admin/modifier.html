@@ -10,7 +10,7 @@
         <h1>Modification de la fiche</h1>
         <div class="view-actions">
             <a href="{{ url_for('collection') }}" class="btn secondary">Annuler</a>
-            <button type="button" class="btn primary" onclick="document.querySelector('.admin-form').submit();">Enregistrer</button>
+            <button type="button" class="btn save" onclick="document.querySelector('.admin-form').submit();">Enregistrer</button>
         </div>
     </div>
 
@@ -115,7 +115,8 @@
         </div>
 
         <div class="form-group">
-            <label for="image_principale">Image principale</label>
+            <h3>Image principale</h3>
+            <br/>
             {% if objet['image_principale'] %}
             <div class="current-image">
                 <img src="{{ url_for('static', filename=objet['image_principale']) }}" alt="Image principale actuelle" class="thumbnail">
@@ -126,7 +127,8 @@
         </div>
 
         <div class="form-group">
-            <label>Images supplémentaires</label>
+            <h3>Images supplémentaires</h3>
+            <br/>
             <p class="text-muted small"><i class="fas fa-info-circle"></i> Glissez-déposez les images pour modifier leur ordre d'affichage.</p>
             {% if images %}
                 <div class="current-images" id="sortable-images">
@@ -151,10 +153,11 @@
         </div>
 
         <div class="form-group">
-            <label>Ajouter de nouvelles images</label>
+            <h3>Ajouter de nouvelles images</h3>
+            <br/>
             <div class="image-upload-container" id="nouvelles-images-container">
             </div>
-            <button type="button" class="btn secondary" style="margin-top: 10px;" onclick="ajouterNouvelleImage()">
+            <button type="button" class="btn save" style="margin-top: 10px;" onclick="ajouterNouvelleImage()">
                 <i class="fas fa-plus"></i> Ajouter une image
             </button>
         </div>
@@ -184,35 +187,48 @@
     // Fonction pour remplir le sélecteur de catégories à partir du JSON
     function remplirCategories() {
         const categorieSelect = document.getElementById('categorie');
-        const categorieValue = categorieSelect.value; // Sauvegarder la valeur actuelle
+        // Sauvegarder la valeur actuelle (si l'utilisateur a déjà changé quelque chose)
+        // Mais attention à ne pas garder la valeur par défaut "" si on est en train d'initialiser
+        let categorieValue = categorieSelect.value; 
 
         // Vider le sélecteur sauf l'option par défaut
         while (categorieSelect.options.length > 1) {
             categorieSelect.remove(1);
         }
 
-        // Ajouter une option pour chaque catégorie du JSON
-        for (const categorie in categorieAttributs) {
+        // Ajouter une option pour chaque catégorie du JSON, triées alphabétiquement
+        const categories = Object.keys(categorieAttributs).sort((a, b) => a.localeCompare(b));
+        
+        for (const categorie of categories) {
             const option = document.createElement('option');
             option.value = categorie;
             option.textContent = categorie;
             categorieSelect.appendChild(option);
         }
 
+        // Ajouter explicitement l'option "Autre"
+        const optionAutre = document.createElement('option');
+        optionAutre.value = "Autre";
+        optionAutre.textContent = "Autre / Personnalisée";
+        categorieSelect.appendChild(optionAutre);
 
+        // Récupérer la catégorie de l'objet depuis le serveur de manière sécurisée
+        const serverCategorie = {{ objet['categorie']|tojson|safe }};
 
-        // Restaurer la valeur sélectionnée si elle existe
-        if (categorieValue) {
-            categorieSelect.value = categorieValue;
-        }
+        // Logique de sélection :
+        // 1. Si on a une valeur déjà sélectionnée manuellement (et pas vide), on essaie de la garder
+        // 2. Sinon, on utilise la valeur du serveur
+        
+        let targetValue = categorieValue || serverCategorie;
 
-        // Pour l'initialisation, préselectionner la catégorie si elle vient du serveur
-        if ("{{ objet['categorie'] }}") {
-            if (Array.from(categorieSelect.options).some(opt => opt.value === "{{ objet['categorie'] }}")) {
-                categorieSelect.value = "{{ objet['categorie'] }}";
-            } else if ("{{ objet['categorie'] }}" && !["", "Autre"].includes("{{ objet['categorie'] }}")) {
+        if (targetValue) {
+            // Vérifier si la valeur existe dans les options
+            if (Array.from(categorieSelect.options).some(opt => opt.value === targetValue)) {
+                categorieSelect.value = targetValue;
+            } else if (targetValue && targetValue !== "Autre") {
+                // Si la catégorie n'existe pas dans la liste (ex: catégorie perso ou renommée), on passe en mode "Autre"
                 categorieSelect.value = "Autre";
-                document.getElementById('autre-categorie').value = "{{ objet['categorie'] }}";
+                document.getElementById('autre-categorie').value = targetValue;
                 toggleAutreCategorie();
             }
         }
@@ -317,7 +333,7 @@
                 if (attributsSpecifiques && attributsSpecifiques[attr.id]) {
                     // On vérifie si c'est un objet ou une simple valeur
                     if (typeof attributsSpecifiques[attr.id] === 'object' && attributsSpecifiques[attr.id] !== null) {
-                        // Si c'est un objet avec une propriété 'valeur', utiliser cette valeur
+                        // Si c'est un objet with une propriété 'valeur', utiliser cette valeur
                         if ('valeur' in attributsSpecifiques[attr.id]) {
                             inputElement.value = attributsSpecifiques[attr.id].valeur;
                         }

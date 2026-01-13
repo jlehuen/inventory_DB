@@ -147,6 +147,17 @@ select:focus {
     background-color: var(--danger-color);
 }
 
+.btn.save {
+    background-color: #e67e22; /* Orange plus doux que warning-color pour un bouton */
+    color: white;
+    border: none;
+}
+
+.btn.save:hover {
+    background-color: #d35400; /* Orange plus foncé au survol */
+    color: white;
+}
+
 .btn-small {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
