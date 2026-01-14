@@ -5,7 +5,7 @@ Ce guide décrit les étapes pour déployer l'application d'inventaire CCNM sur 
 ## Références
 
 - [https://flask-fr.readthedocs.io/tutorial/deploy/] (https://flask-fr.readthedocs.io/tutorial/deploy/)
-- [https://sysadmin.cyklodev.com/deployer-une-application-flask/](https://sysadmin.cyklodev.com/deployer-une-application-flask/)
+- [https://sysadmin.cyklodev.com/deployer-une-application-flask/] (https://sysadmin.cyklodev.com/deployer-une-application-flask/)
 
 ## 1. Prérequis
 
