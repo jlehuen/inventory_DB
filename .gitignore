@@ -15,6 +15,7 @@ venv/
 # Environnement et Secrets (TRES IMPORTANT)
 .env
 .secret
+.env.save
 passwrd.txt
 instance/
 

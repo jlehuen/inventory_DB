@@ -1,193 +1,182 @@
-# Inventaire CCNM
+# Inventaire CCNM & Musée Martial Vivet
 
-Ce projet est une application web permettant de cataloguer et de présenter la collection de micro-ordinateurs et de dispositifs numériques du **Centre Culturel sur le Numérique du Mans (CCNM)** et du **Musée Martial Vivet**.
+Ce projet est une application web de gestion d'inventaire destinée à cataloguer, préserver et valoriser le patrimoine numérique (micro-ordinateurs, périphériques, documentation) du **Centre Culturel sur le Numérique du Mans (CCNM)** et du **Musée Martial Vivet**.
 
-Il s'inspire de l'esprit du site [patstec.fr](https://www.patstec.fr) pour la préservation du patrimoine scientifique et technique.
+Développée en **Python (Flask)**, l'application s'inspire de la rigueur des outils de conservation muséale (type [patstec.fr](https://www.patstec.fr)) tout en offrant une interface moderne et dynamique.
 
-## Fonctionnalités
+---
 
-*   **Gestion des ressources web** : 
-    *   Liens spécifiques pour chaque objet (stockés en base de données).
-    *   Catalogue global de liens utiles par catégorie (géré via `static/liens.json`).
-    *   **Éditeur de liens avancé** : Interface d'administration dédiée utilisant une application JavaScript robuste pour gérer les catégories de liens globaux.
-*   **Recherche avancée** : Recherche par mot-clé incluant le nom, la description, le fabricant, le numéro, l'année, les attributs spécifiques et désormais le contenu des liens web.
-*   **Numéros d'inventaire automatiques** : Génération automatique de numéros uniques (ex: `INV_IC2_0001`) avec gestion intelligente des conflits (réattribution automatique si le numéro est pris au dernier moment).
-*   **Affichage d'objets au hasard (AJAX)** : Découverte de la collection via un bouton permettant d'afficher aléatoirement 3 objets sans recharger la page.
-*   **Champs dynamiques** :
-    *   Attributs spécifiques selon la catégorie (entièrement configurables via `static/categories.json`).
-    *   Gestion de multiples liens web pour chaque objet.
-    *   Galerie d'images avec gestion de l'ordre et des légendes.
-    *   **Chargement facilité** : Support du glisser-déposer (Drag & Drop) pour toutes les images.
-*   **Administration** : 
-    *   Interface sécurisée pour ajouter, modifier et supprimer des objets (nécessite une authentification).
-    *   **Verrouillage optimiste** : Prévention des conflits de modification (si deux admins éditent la même fiche en même temps).
-*   **Export PDF** : Génération automatique de fiches PDF complètes pour chaque objet.
-*   **Sécurité** : Protection contre les attaques par force brute sur la page de connexion.
-*   **Responsive Design** : Interface moderne adaptée aux mobiles et aux grands écrans.
-*   **Maintenance facile** : Outils intégrés pour la sauvegarde, le nettoyage des images et la mise à jour du schéma de données.
+## 🚀 Fonctionnalités Clés
 
-## Gestion des Catégories
+### Gestion de Collection
+*   **Fiches détaillées** : Gestion complète des objets (Nom, Fabricant, Année, Description, État, Provenance).
+*   **Numérotation Automatique Intelligente** : Génération de numéros d'inventaire uniques (ex: `INV_IC2_0001`) avec gestion automatique des collisions en cas d'ajouts simultanés.
+*   **Champs Dynamiques par Catégorie** : Les attributs spécifiques (ex: "Focale" pour un appareil photo, "RAM" pour un ordinateur) sont configurables sans toucher au code (via JSON).
+*   **Galerie Média** :
+    *   Support du **Glisser-Déposer (Drag & Drop)** pour l'upload d'images.
+    *   Réorganisation des images et ajout de légendes.
+    *   Génération automatique de miniatures optimisées.
 
-L'application est entièrement dynamique. Pour ajouter ou modifier une catégorie d'objets (ex: "Consoles de jeu", "Appareils photo"), vous n'avez pas besoin de modifier le code Python. Tout se configure dans le fichier `static/categories.json`.
+### Ressources Documentaires
+*   **Liens Contextuels** : Association de liens web spécifiques à chaque objet (manuels, vidéos de démonstration).
+*   **Bibliothèque de Liens** : Gestion centralisée de liens utiles globaux, classés par catégories.
+*   **Export PDF** : Génération à la volée de fiches d'inventaire imprimables et standardisées.
 
-### Ajouter une catégorie
+### Expérience Utilisateur & Recherche
+*   **Moteur de Recherche Global** : Recherche plein texte incluant nom, description, fabricant, année, attributs spécifiques et contenu des liens.
+*   **Découverte Aléatoire** : Module AJAX permettant d'afficher 3 objets au hasard sans recharger la page.
+*   **Responsive Design** : Interface adaptée aux tablettes et mobiles pour une consultation en réserve ou en salle d'exposition.
 
-1.  Ouvrez `static/categories.json`.
-2.  Ajoutez un nouvel objet avec le nom de la catégorie au pluriel :
-    ```json
-    "Appareils photo": {
-      "icon": "fa-camera",
-      "description": "Appareils de prise de vue historiques.",
-      "attributes": [
-        { "id": "focale", "label": "Focale", "type": "text", "ordre": 1 },
-        { "id": "format", "label": "Format", "type": "text", "ordre": 2 }
-      ]
-    }
+### Administration Sécurisée
+*   **Sécurité Renforcée** : Protection contre les attaques par force brute (bannissement temporaire d'IP).
+*   **Travail Collaboratif Sûr (Verrouillage Optimiste)** : Système empêchant l'écrasement accidentel de données si deux administrateurs modifient la même fiche simultanément.
+
+---
+
+## 🏗 Architecture Technique
+
+L'application repose sur des choix techniques robustes pour garantir l'intégrité des données :
+
+1.  **Backend** : Python / Flask.
+2.  **Base de Données** : SQLite avec schéma relationnel strict (`static/schema.sql`).
+3.  **Gestion de la Concurrence** : Utilisation d'une colonne `version` dans la base de données. Lors d'une mise à jour, l'application vérifie que la version en base correspond à celle chargée par l'utilisateur. Si elles diffèrent, la modification est rejetée pour protéger le travail de l'autre administrateur.
+4.  **Ressources Hybrides** :
+    *   Les données structurées sont en **Base de Données**.
+    *   La configuration flexible (catégories, attributs) et les ressources globales sont en **JSON**.
+
+---
+
+## 🛠 Installation (Local)
+
+### Prérequis
+*   Python 3.8 ou supérieur.
+*   Git.
+
+### Étapes
+
+1.  **Cloner le dépôt :**
+    ```bash
+    git clone <url_du_depot>
+    cd inventaire_CCNM
     ```
-3.  Enregistrez. La catégorie apparaîtra immédiatement dans l'interface d'ajout et de modification.
 
-### Modifier une catégorie
+2.  **Créer et activer un environnement virtuel (Recommandé) :**
+    *   *MacOS / Linux :*
+        ```bash
+        python3 -m venv venv
+        source venv/bin/activate
+        ```
+    *   *Windows :*
+        ```bash
+        python -m venv venv
+        venv\Scripts\activate
+        ```
 
-*   **Changer l'icône ou la description** : Modifiez simplement les valeurs dans le JSON.
-*   **Ajouter des champs spécifiques** : Ajoutez une entrée dans la liste `attributes`.
-*   **Renommer une catégorie** : Si vous renommez une catégorie dans le JSON, vous devrez également mettre à jour les objets existants en base de données pour qu'ils pointent vers le nouveau nom.
-
-## Prérequis
-
-*   Python 3.8+
-*   Pip (gestionnaire de paquets Python)
-
-## Installation et Lancement (Local)
-
-1.  **Installation des dépendances :**
-
+3.  **Installer les dépendances :**
     ```bash
     pip install -r requirements.txt
     ```
 
-2.  **Configuration (Optionnel mais recommandé) :**
-    Créez un fichier `.env` à la racine si vous souhaitez personnaliser les accès :
-    
+4.  **Configuration (Optionnel) :**
+    Créez un fichier `.env` à la racine pour sécuriser vos accès :
     ```ini
-    SECRET_KEY=votre_cle_secrete
+    SECRET_KEY=votre_cle_secrete_aleatoire
     ADMIN_USERNAME=admin
-    ADMIN_PASSWORD=votre_mot_de_passe_initial
+    ADMIN_PASSWORD=votre_mot_de_passe
     ```
-    > **Note de sécurité :** 
-    > 1. Lancez l'application une première fois pour créer le compte administrateur.
-    > 2. Une fois le compte créé, vous pouvez **supprimer la ligne `ADMIN_PASSWORD`** du fichier `.env`.
-    > 3. Le mot de passe restera actif (stocké de manière hachée en base) et ne sera plus lisible en clair.
-    > 4. Si vous laissez la variable `ADMIN_PASSWORD`, le mot de passe sera réinitialisé à cette valeur à chaque redémarrage.
+    *Note : Une fois le premier compte admin créé via l'interface ou le lancement initial, la variable `ADMIN_PASSWORD` peut être retirée.*
 
-3.  **Lancer le serveur :**
+5.  **Lancer l'application :**
+    *   *Via le script (MacOS/Linux) :*
+        ```bash
+        ./run_server.command
+        ```
+    *   *Via Python :*
+        ```bash
+        python app.py
+        ```
+    Accédez à l'application sur `http://127.0.0.1:5000`.
 
-    ```bash
-    ./run_server.command
-    # Ou via python : python app.py
-    ```
-    Le serveur démarrera à l'adresse `http://127.0.0.1:5000`.
+---
 
-4.  **Accéder à l'application :**
-    Vous pouvez utiliser le script suivant pour ouvrir directement votre navigateur :
-    
-    ```bash
-    ./run_client.command
-    ```
+## ⚙️ Manuel de Configuration
 
-## Structure du Projet
+L'application est conçue pour être évolutive sans modification du code source Python.
+
+### Gestion des Catégories (`static/categories.json`)
+Ce fichier définit la structure de votre inventaire. Vous pouvez ajouter des catégories ou modifier les champs requis pour chacune.
+
+**Exemple d'ajout d'une catégorie :**
+```json
+"Consoles": {
+  "icon": "fa-gamepad",
+  "description": "Consoles de jeux vidéo de salon et portables.",
+  "attributes": [
+    { "id": "generation", "label": "Génération", "type": "text", "ordre": 1 },
+    { "id": "region", "label": "Région (PAL/NTSC)", "type": "text", "ordre": 2 }
+  ]
+}
+```
+*Si vous modifiez des attributs existants, utilisez le script de synchronisation (voir section Maintenance).*
+
+---
+
+## 🧹 Maintenance et Utilitaires
+
+Le dossier `scripts/` et `utils/` contient des outils essentiels pour la vie du projet :
+
+| Script | Description | Commande |
+| :--- | :--- | :--- |
+| **backup.command** | Crée une archive complète (Base de données + Images) dans le dossier `backups/`. | `./backup.command` |
+| **sync_categories.py** | À lancer après avoir modifié `categories.json`. Met à jour les objets existants en base pour refléter la nouvelle structure JSON. | `python utils/sync_categories.py` |
+| **clean_images.py** | Analyse le dossier d'upload et supprime les images qui ne sont plus liées à aucun objet (nettoyage orphelins). | `python scripts/clean_images.py` |
+| **resize_existing...** | Redimensionne et optimise les images qui auraient été uploadées manuellement sans passer par l'interface. | `python scripts/resize_existing_images.py` |
+
+---
+
+## 🧪 Tests Automatisés
+
+Une suite de tests **pytest** garantit la non-régression des fonctionnalités critiques (Authentification, Ajout, Sécurité, Conflits).
+
+Les tests utilisent une base de données temporaire et **ne touchent jamais** à vos données de production.
+
+```bash
+# Lancer tous les tests
+pytest
+
+# Lancer avec détails
+pytest -v
+```
+
+---
+
+## 📂 Structure du Projet
 
 ```
 inventaire_CCNM/
-├── app.py                      # Application Flask principale
-├── requirements.txt            # Liste des dépendances
-├── DEPLOY.md                   # Guide de déploiement production
-├── run_server.command          # Lancement du serveur
-├── run_client.command          # Ouverture du navigateur
-├── backup.command              # Script de sauvegarde (base de données)
-├── upgrade.command             # Script de mise à jour des dépendances
+├── app.py                      # Cœur de l'application Flask (Routes, Logique)
+├── requirements.txt            # Dépendances Python
 ├── static/
-│   ├── css/                    # Feuilles de style
-│   ├── categories.json         # Configuration des attributs par catégorie
-│   └── schema.sql              # Schéma de la base de données
-├── templates/                  # Templates HTML (Jinja2)
-├── scripts/                    # Scripts backend
-│   ├── pdf_generator.py        # Moteur PDF
-│   ├── clean_images.py         # Nettoyage fichiers orphelins
-│   ├── login_security.py       # Sécurité auth
-│   └── resize_existing_images.py # Optimisation des images uploadées
-├── utils/
-│   └── sync_categories.py      # Outil de synchronisation JSON <-> BDD
-└── database/
-    ├── database.db             # Base de données SQLite (créée au lancement)
-    └── uploads/                # Stockage des images
+│   ├── categories.json         # CONFIGURATION MAJEURE : Structure des objets
+│   ├── liens.json              # Base de données des liens globaux
+│   ├── schema.sql              # Structure SQL de la base de données
+│   ├── css/                    # Styles (Modern UI)
+│   └── js/                     # Scripts front (Drag&Drop, Éditeurs)
+├── templates/                  # Vues HTML (Jinja2)
+│   └── admin/                  # Interfaces d'administration
+├── database/
+│   ├── database.db             # Fichier de données SQLite
+│   └── uploads/                # Stockage des images des objets
+├── scripts/                    # Scripts de maintenance backend
+└── utils/                      # Utilitaires système
 ```
-
-## Modèle de Données
-
-L'application utilise une base de données SQLite relationnelle définie dans `static/schema.sql`.
-
-### Tables Principales
-
-*   **`objets`** : Table centrale contenant les fiches d'inventaire.
-    *   `numero_inventaire` : Identifiant unique (ex: INV_IC2_0001).
-    *   `attributs_specifiques` : Champ texte stockant les données dynamiques (JSON) définies dans `categories.json`.
-    *   `version` : Entier incrémenté à chaque modification pour gérer le *verrouillage optimiste*.
-    *   `image_principale` : Chemin relatif vers le fichier image principal.
-
-*   **`images`** : Images supplémentaires (Relation 1:N avec `objets`).
-    *   Permet de gérer une galerie complète par objet avec ordre et légendes.
-
-*   **`liens`** : Références web (Relation 1:N avec `objets`).
-    *   Stocke les URLs externes vers des documentations, manuels ou vidéos.
-
-### Tables de Sécurité
-
-*   **`users`** : Comptes administrateurs (mots de passe hachés).
-*   **`login_attempts`** : Protection contre les attaques par force brute (blocage IP temporaire).
-*   **`auth_logs`** : Historique des connexions et actions sensibles.
-
-## Maintenance
-
-Le projet inclut plusieurs utilitaires pour faciliter la maintenance au quotidien :
-
-*   **Sauvegardes** : `./backup.command` crée une archive datée de la base de données et des images dans le dossier `backups/`.
-*   **Évolution du modèle** : Si vous modifiez `static/categories.json` (ajout/suppression d'attributs), utilisez `python utils/sync_categories.py` pour mettre à jour les données existantes en base.
-*   **Optimisation** : `python scripts/resize_existing_images.py` permet de redimensionner et compresser les images qui auraient été uploadées sans traitement.
-
-## Tests Automatisés
-
-Pour garantir la stabilité du projet lors des modifications, une suite de tests automatisés est disponible. Elle utilise **pytest** et vérifie les fonctionnalités critiques (connexion, ajout d'objet, sécurité) sans affecter votre base de données réelle (utilisation d'une base temporaire).
-
-### Lancer les tests pas à pas
-
-Ouvrez un terminal dans le dossier du projet et exécutez les commandes suivantes :
-
-```bash
-# 1. Activer l'environnement virtuel (indispensable)
-source venv/bin/activate
-
-# 2. Lancer tous les tests
-pytest
-
-# Optionnel : Voir le détail de chaque test
-pytest -v
-
-# Optionnel : S'arrêter dès la première erreur rencontrée
-pytest -x
-```
-
-> **Note importante** : Les tests créent automatiquement une base de données temporaire. Vos données réelles (dans `database/database.db`) ne sont **jamais touchées** par les tests.
-
-### Que testons-nous ?
-*   **Intégrité** : L'application démarre correctement.
-*   **Routing** : Les pages principales (Accueil, Login) répondent (Code 200).
-*   **Sécurité** : Les pages d'administration sont bien inaccessibles sans authentification.
-*   **Fonctionnalités** : Le cycle complet d'ajout d'un objet (Formulaire -> Base de données) est validé, y compris la gestion des champs dynamiques JSON.
 
 ## Déploiement
 
-Un guide détaillé pour le déploiement sur un serveur Linux (avec Nginx/Gunicorn) est disponible dans [DEPLOY.md](DEPLOY.md).
+Pour passer en production (Serveur Linux, Nginx, Gunicorn), consultez le guide dédié : [**DEPLOY.md**](DEPLOY.md).
 
-## Licence
-
-Projet développé pour le Centre Culturel sur le Numérique du Mans.
+---
+**Licence & Crédits**
+Projet développé pour le CCNM.
+Iconographie : FontAwesome.
+Police : Effra Std.
