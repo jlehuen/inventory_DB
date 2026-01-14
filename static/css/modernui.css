@@ -679,3 +679,87 @@ footer {
     box-shadow: 0 10px 20px rgba(0,0,0,0.2);
     transform: rotate(2deg);
 }
+
+/* Styles pour la bannière de contribution */
+.contribution-banner {
+    background: linear-gradient(to right, #2c3e50, #3498db);
+    color: white;
+    padding: 1rem 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 10;
+    border-radius: 12px; /* Angles arrondis */
+}
+
+.home-banner {
+    margin: -1rem -2rem 4rem -2rem; /* Équilibre l'espace haut (via padding parent) et bas */
+}
+
+.banner-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+}
+
+.banner-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.banner-icon.composite {
+    font-size: 2.2rem;
+    color: #f1c40f; /* Jaune doré au lieu de blanc */
+}
+
+.banner-icon .cube {
+    position: absolute;
+    font-size: 1.4rem;
+    color: #f1c40f;
+    top: 6px;
+    left: 22px;
+    text-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+
+.banner-text {
+    flex: 1;
+}
+
+.banner-text h3 {
+    color: white;
+    margin-bottom: 0.5rem;
+    font-size: 1.4rem;
+}
+
+.banner-text p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 1rem;
+}
+
+.banner-action {
+    flex-shrink: 0;
+}
+
+/* Responsive pour la bannière */
+@media (max-width: 768px) {
+    .banner-content {
+        flex-direction: column;
+        text-align: center;
+        padding: 0 1.5rem;
+    }
+    
+    .banner-text {
+        margin-bottom: 1rem;
+    }
+}

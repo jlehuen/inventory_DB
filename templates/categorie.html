@@ -5,7 +5,10 @@
 
 {% block content %}
 <section class="categorie-objets">
-    <h1>{{ categorie }}</h1>
+    <div class="categorie-header">
+        <h1>{{ categorie }}</h1>
+        <a href="{{ url_for('categories') }}" class="btn"><i class="fas fa-arrow-left"></i> Retour aux catégories</a>
+    </div>
 
     {% if description %}
     <div class="categorie-description">
@@ -39,11 +42,6 @@
             </a>
         </div>
         {% endfor %}
-    </div>
-
-    <br/>
-    <div class="categorie-nav">
-        <a href="{{ url_for('categories') }}" class="btn"><i class="fas fa-arrow-left"></i> Retour aux catégories</a>
     </div>
 </section>
 
@@ -101,6 +99,19 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
+    .categorie-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #eee;
+    }
+
+    .categorie-header h1 {
+        margin-bottom: 0;
+    }
+
     .categorie-description {
         background-color: rgba(52, 152, 219, 0.1);
         border-left: 4px solid var(--secondary-color);

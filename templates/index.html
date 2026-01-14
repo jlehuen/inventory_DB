@@ -2,6 +2,25 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<!-- Bannière Contribution -->
+<div class="contribution-banner home-banner">
+    <div class="banner-content">
+        <div class="banner-icon composite">
+            <i class="fas fa-hand-holding hand"></i>
+            <i class="fas fa-cube cube"></i>
+        </div>
+        <div class="banner-text">
+            <h3>Vous pouvez contribuer !</h3>
+            <p>Le musée s'enrichit grâce à vos dons. Vous possédez des machines, objets ou ouvrages qui pourraient rejoindre notre collection ?
+                Vous avez des informations ou documents à partager sur un objet présent dans notre catalogue ?
+            </p>
+        </div>
+        <div class="banner-action">
+            <a href="{{ url_for('contribuer') }}" class="btn save">En savoir plus</a>
+        </div>
+    </div>
+</div>
+
 <section class="hero">
     <div class="hero-content">
         <h1>Musée Martial Vivet</h1>
@@ -45,6 +64,8 @@
     background-size: 100% auto;
     background-position: center;
     background-repeat: no-repeat;
+    border-radius: 12px; /* Angles arrondis */
+    overflow: hidden; /* Assure que le dégradé pseudo-élément suit l'arrondi */
 }
 
 .hero::before {

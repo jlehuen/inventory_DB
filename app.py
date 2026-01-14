@@ -457,6 +457,11 @@ def index():
     conn.close()
     return render_template('index.html', objets=objets)
 
+@app.route('/contribuer')
+def contribuer():
+    """Affiche la page d'appel aux contributions."""
+    return render_template('contribuer.html')
+
 # Route pour servir les fichiers depuis database/uploads
 @app.route('/static/database/uploads/<path:filename>')
 def serve_upload(filename):
@@ -613,7 +618,7 @@ def categories():
 def objets_par_categorie(categorie):
     """Affiche les objets appartenant à une catégorie spécifique."""
     conn = get_db_connection()
-    objets = conn.execute('SELECT * FROM objets WHERE categorie = ?', (categorie,)).fetchall()
+    objets = conn.execute('SELECT * FROM objets WHERE categorie = ? ORDER BY date_fabrication ASC', (categorie,)).fetchall()
 
     # Stats par année pour cette catégorie (Répartition temporelle)
     stats_annees = conn.execute('''

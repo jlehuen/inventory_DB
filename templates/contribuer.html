@@ -1,0 +1,158 @@
+{# templates/contribuer.html - Page d'appel aux dons et contributions #}
+{% extends 'base.html' %}
+
+{% block title %}Contribuer à la collection - CCNM{% endblock %}
+
+{% block content %}
+<section class="contribution-hero">
+    <div class="contribution-content">
+        <h1>Contribuez à la mémoire du numérique</h1>
+        <p class="lead">Votre patrimoine informatique a une histoire. Aidez-nous à la raconter.</p>
+    </div>
+</section>
+
+<section class="contribution-details">
+    <div class="content-card">
+        <h2><i class="fas fa-hand-holding-heart"></i> Pourquoi contribuer ?</h2>
+        <p>
+            L'histoire de l'informatique évolue à une vitesse fulgurante. Les machines qui ont révolutionné notre quotidien, 
+            les logiciels qui ont façonné nos méthodes de travail, et les documentations qui expliquent leur fonctionnement 
+            disparaissent trop souvent, oubliés dans des greniers ou destinés à la destruction.
+        </p>
+        <p>
+            Le <strong>Centre Culturel sur le Numérique du Mans (CCNM)</strong> et le <strong>Musée Martial Vivet</strong> 
+            ont pour mission de préserver ces témoins techniques pour les générations futures, les étudiants et les chercheurs. 
+            Chaque don ou prêt permet d'enrichir cette collection vivante et de sauver une part de notre héritage technologique.
+        </p>
+    </div>
+
+    <div class="grid-2-cols">
+        <div class="content-card">
+            <h3><i class="fas fa-search"></i> Ce que nous recherchons</h3>
+            <ul class="check-list">
+                <li><strong>Micro-ordinateurs</strong> des années 70 à 2000 (toutes marques).</li>
+                <li><strong>Périphériques</strong> (imprimantes, écrans, lecteurs externes, modems).</li>
+                <li><strong>Consoles de jeux</strong> et jeux vidéo anciens.</li>
+                <li><strong>Calculatrices</strong> programmables et assistants personnels (PDA).</li>
+                <li><strong>Documentation</strong> : Manuels techniques, magazines d'époque, publicités.</li>
+                <li><strong>Logiciels originaux</strong> (disquettes, CD-ROM, cassettes).</li>
+            </ul>
+        </div>
+
+        <div class="content-card highlight-card">
+            <h3><i class="fas fa-envelope-open-text"></i> Comment procéder ?</h3>
+            <p>
+                Vous possédez un objet dormant dans un placard ? Vous souhaitez qu'il soit valorisé et conservé dans des conditions optimales ?
+                N'hésitez pas à nous contacter. Nous étudions toute proposition de <strong>don</strong> ou de <strong>prêt temporaire</strong>.
+            </p>
+            
+            <div class="contact-box">
+                <p>Écrivez-nous à l'une des adresses suivantes :</p>
+                <div class="email-links">
+                    <a href="mailto:musee-ic2@univ-lemans.fr" class="btn primary"><i class="fas fa-paper-plane"></i> musee-ic2@univ-lemans.fr</a>
+                    <span class="separator">ou</span>
+                    <a href="mailto:icc@univ-lemans.fr" class="btn"><i class="fas fa-paper-plane"></i> icc@univ-lemans.fr</a>
+                </div>
+            </div>
+            <p class="small-text">
+                Si possible, joignez une photo et une brève description de l'objet dans votre message.
+            </p>
+        </div>
+    </div>
+</section>
+
+<style>
+    .contribution-hero {
+        background: linear-gradient(135deg, var(--primary-color), var(--dark-color));
+        color: white;
+        padding: 3rem 2rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+        text-align: center;
+        box-shadow: var(--box-shadow);
+    }
+
+    .contribution-hero h1 {
+        color: white;
+        margin-bottom: 1rem;
+        font-size: 2.5rem;
+    }
+
+    .contribution-hero .lead {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        font-weight: 300;
+    }
+
+    .grid-2-cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .grid-2-cols {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .check-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .check-list li {
+        margin-bottom: 0.8rem;
+        padding-left: 1.5rem;
+        position: relative;
+    }
+
+    .check-list li::before {
+        content: '\f00c';
+        font-family: 'Font Awesome 5 Free';
+        font-weight: 900;
+        color: var(--success-color);
+        position: absolute;
+        left: 0;
+        top: 2px;
+    }
+
+    .contact-box {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        margin: 1.5rem 0;
+        text-align: center;
+        border: 1px dashed var(--secondary-color);
+    }
+
+    .email-links {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 1rem;
+        align-items: center;
+    }
+    
+    .separator {
+        font-size: 0.9rem;
+        color: #666;
+        font-style: italic;
+    }
+
+    .small-text {
+        font-size: 0.85rem;
+        color: #666;
+        font-style: italic;
+    }
+    
+    .content-card h2, .content-card h3 {
+        color: var(--primary-color);
+        margin-top: 0;
+        border-bottom: 2px solid var(--light-color);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
