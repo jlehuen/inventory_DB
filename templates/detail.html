@@ -14,10 +14,10 @@
         </div>
         <div class="view-actions">
             {% if current_user.is_authenticated %}
-                <a href="{{ url_for('collection') }}" class="btn"><i class="fas fa-arrow-left"></i> Retour à la liste</a>
+                <a href="{{ url_for('objets_par_categorie', categorie=objet['categorie']) }}" class="btn"><i class="fas fa-arrow-left"></i> Retour à la catégorie</a>
                 <a href="{{ url_for('modifier_objet', id=objet['id']) }}" class="btn primary"><i class="fas fa-edit"></i> Editer la fiche</a>
             {% else %}
-                <a href="{{ url_for('collection') }}" class="btn"><i class="fas fa-arrow-left"></i> Retour à la liste</a>
+                <a href="{{ url_for('objets_par_categorie', categorie=objet['categorie']) }}" class="btn"><i class="fas fa-arrow-left"></i> Retour à la catégorie</a>
             {% endif %}
             <a href="{{ url_for('generate_pdf', id=objet['id']) }}" class="btn primary" target="_blank">
                 <i class="fas fa-file-pdf"></i> GÉNÉRER UN PDF
