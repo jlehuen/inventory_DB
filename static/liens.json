@@ -26,6 +26,16 @@
                 "description": "This is a TypeScript-based TRS-80 Model I and Model III emulator.",
                 "nom": "TRS-80 Emulator",
                 "url": "https://github.com/lkesteloot/trs80/tree/master/packages/trs80-emulator"
+            },
+            {
+                "description": "",
+                "nom": "Minitel",
+                "url": "https://www.minipavi.fr/emulminitel/index.php"
+            },
+            {
+                "description": "",
+                "nom": "ZX81",
+                "url": "https://www.zx81stuff.org.uk/zx81/jtyone.html"
             }
         ]
     }

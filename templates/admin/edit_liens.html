@@ -42,6 +42,9 @@
     </form>
 </div>
 
+<!-- Ajout de SortableJS depuis un CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
 <script>
 (function() {
     // Gestionnaire d'erreur global pour cette page
@@ -108,6 +111,7 @@
             appState.forEach(function(category, catIndex) {
                 var catBlock = document.createElement('div');
                 catBlock.className = 'cat-block';
+                catBlock.dataset.catIndex = catIndex; // Pour SortableJS
                 catBlock.style.cssText = 'background: white; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow: hidden;';
 
                 // En-tête de catégorie
@@ -115,9 +119,8 @@
                 header.style.cssText = 'background: #f1f4f6; padding: 15px; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: space-between; gap: 15px;';
                 header.innerHTML = `
                     <div style="flex-grow: 1; display: flex; align-items: center; gap: 10px;">
-                        <div style="color: #34495e; cursor: move;"><i class="fas fa-grip-vertical"></i></div>
+                        <div class="drag-handle" style="color: #34495e; cursor: move;"><i class="fas fa-grip-vertical"></i></div>
                         <div style="flex-grow: 1;">
-                            <label style="display: block; font-size: 0.75em; font-weight: bold; color: #7f8c8d; text-transform: uppercase; margin-bottom: 3px;">NOM DE LA CATÉGORIE</label>
                             <input type="text" class="input-cat-name" value="${escapeHtml(category.categorie || '')}"
                                    style="width: 100%; font-size: 1.1em; font-weight: bold; border: 1px solid #ccc; padding: 8px; border-radius: 4px;"
                                    placeholder="Ex: Bases de données">
@@ -145,6 +148,8 @@
 
                 // Liste des liens
                 var linksContainer = document.createElement('div');
+                linksContainer.className = 'links-container';
+                linksContainer.dataset.catIndex = catIndex; // Pour retrouver la catégorie parente
                 linksContainer.style.cssText = 'padding: 15px; background: #fff;';
 
                 if (!category.liens || category.liens.length === 0) {
@@ -152,9 +157,12 @@
                 } else {
                     category.liens.forEach(function(link, linkIndex) {
                         var linkRow = document.createElement('div');
+                        linkRow.className = 'link-row';
+                        linkRow.dataset.linkIndex = linkIndex; // Pour SortableJS
                         linkRow.style.cssText = 'display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; background: #fdfdfd; border: 1px solid #eee; border-radius: 6px; margin-bottom: 10px; align-items: flex-start;';
                         
                         linkRow.innerHTML = `
+                            <div style="flex-shrink: 0; padding-right: 10px; color: #bdc3c7; cursor: move;"><i class="fas fa-grip-lines"></i></div>
                             <div style="flex: 1 1 200px; display: flex; flex-direction: column; gap: 8px;">
                                 <input type="text" class="input-link-nom" value="${escapeHtml(link.nom || '')}" placeholder="Nom du site" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-weight: 500;">
                                 <input type="text" class="input-link-url" value="${escapeHtml(link.url || '')}" placeholder="URL (https://...)" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; color: #2980b9; font-family: monospace;">
@@ -213,7 +221,53 @@
 
                 container.appendChild(catBlock);
             });
+
+            // Initialiser SortableJS après le rendu
+            initSortable();
         }
+
+        // --- SortableJS ---
+
+        function initSortable() {
+            // Pour les catégories
+            new Sortable(container, {
+                animation: 150,
+                handle: '.drag-handle',
+                onEnd: function(evt) {
+                    var itemEl = evt.item; // L'élément déplacé
+                    var oldIndex = evt.oldIndex;
+                    var newIndex = evt.newIndex;
+
+                    // Mettre à jour l'ordre dans appState
+                    var movedItem = appState.splice(oldIndex, 1)[0];
+                    appState.splice(newIndex, 0, movedItem);
+
+                    // Re-render pour que tout soit propre
+                    render();
+                }
+            });
+
+            // Pour les liens dans chaque catégorie
+            document.querySelectorAll('.links-container').forEach(function(linksContainer) {
+                new Sortable(linksContainer, {
+                    animation: 150,
+                    group: 'links',
+                    onEnd: function(evt) {
+                        var catIndex = parseInt(evt.from.dataset.catIndex, 10);
+                        var oldIndex = evt.oldIndex;
+                        var newIndex = evt.newIndex;
+
+                        var category = appState[catIndex];
+                        if (category && category.liens) {
+                            var movedItem = category.liens.splice(oldIndex, 1)[0];
+                            category.liens.splice(newIndex, 0, movedItem);
+                            render();
+                        }
+                    }
+                });
+            });
+        }
+
 
         // --- Utilitaires ---
 
