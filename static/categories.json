@@ -1,7 +1,7 @@
 {
   "Ordinateurs": {
     "icon": "fa-laptop",
-    "description": "Notre collection comprend des micro-ordinateurs de différentes époques, illustrant l'évolution de l'informatique personnelle depuis la fin des années 1970 jusqu'au début des année 2000, notamment avec une série de machines emblématiques dessinées par Jony Ive pour la marque à la pomme.",
+    "description": "Cette catégorie regroupe des ordinateurs personnels, des stations de travail et des systèmes portables. La collection couvre principalement la période des pionniers de la micro-informatique (années 1970) jusqu'au début des années 2000, illustrant divers aspects de l'histoire des ordinateurs.",
     "attributes": [
       {
         "id": "processeur",
@@ -37,7 +37,7 @@
   },
   "Consoles de jeu": {
     "icon": "fa-gamepad",
-    "description": "Si notre objectif n'est pas de retracer l'histoire vidéo-ludique, les consoles de jeu sont des ordinateurs dédiés et elles ont de ce fait toute leur place dans notre collection.",
+    "description": "Les consoles de jeu sont présentées ici comme des systèmes informatiques (ordinateurs spécialisés). La collection a vocation à présenter des machines de différentes générations qui illustrent l'évolution des performances et des architectures matérielles.",
     "attributes": [
       {
         "id": "processeur",
@@ -67,7 +67,7 @@
   },
   "Périphériques": {
     "icon": "fa-keyboard",
-    "description": "Les périphériques sont des dispositifs externes connectés aux ordinateurs pour étendre leurs fonctionnalités. Notre collection inclut des dispositifs de stockage et autres périphériques d'entrée/sortie.",
+    "description": "Regroupe des dispositifs d'entrée/sortie, de communication et d'extension connectés aux ordinateurs. La collection comprend des claviers, souris, imprimantes, modems, ainsi que des manettes de jeu et d'autres interfaces spécialisées.",
     "attributes": [
       {
         "id": "type",
@@ -85,7 +85,7 @@
   },
   "Calculatrices": {
     "icon": "fa-calculator",
-    "description": "Notre collection comporte quelques calculatrices (basiques, scientifiques, programmables) qui témoignent de l'évolution des outils de calcul depuis les années 1970.",
+    "description": "Cette section est consacrée aux calculatrices, des premiers modèles électroniques aux machines programmables et graphiques. Elle met en lumière l'évolution des outils de calcul personnels avant et pendant l'ère de l'ordinateur personnel.",
     "attributes": [
       {
         "id": "type",
@@ -97,7 +97,7 @@
   },
   "Stockages": {
     "icon": "fa-floppy-disk",
-    "description": "Notre collection comporte une série de supports de stockage illustrant l'évolution des technologies, de la carte perforée aux disques SSD en passant par les disquettes et autres bandes magnétiques.",
+    "description": "Cette partie présente l'évolution des supports de stockage de données. Elle comprend des exemples de technologies variées, telles que les cartes perforées, les bandes magnétiques, les disquettes, les disques optiques, jusqu'aux dispositifs de stockage modernes.",
     "attributes": [
       {
         "id": "techno",
@@ -121,7 +121,7 @@
   },
   "Livres": {
     "icon": "fa-book",
-    "description": "Notre collection comprend des ouvrages de référence des années 80 et 90 sur les microprocesseurs et l'architecture des ordinateurs, ainsi que quelques documentations et manuels techniques.",
+    "description": "Notre collection comprend des manuels techniques, des ouvrages de référence sur les microprocesseurs et leur programmation (assembleur), sur l'architecture des ordinateurs, ainsi que sur les systèmes d'exploitation.",
     "attributes": [
       {
         "id": "auteur",
@@ -151,7 +151,7 @@
   },
   "Divers": {
     "icon": "fa-cube",
-    "description": "Nous collectons et conservons également des objets et curiosités numériques ne rentrant pas dans les autres catégories.",
+    "description": "Cette catégorie rassemble des objets qui ne rentrent pas dans les autres catégories, mais qui présentent un intérêt pour l'histoire de l'informatique et des technologies numériques, tels que les terminaux télématiques ou les assistants personnels par exemple.",
     "attributes": [
       {
         "id": "description",
