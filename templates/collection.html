@@ -16,7 +16,7 @@
     <div class="admin-header">
         <a href="{{ url_for('ajouter_objet') }}" class="btn"><i class="fas fa-plus"></i> Ajouter un objet</a>
         <a href="{{ url_for('export_csv') }}" class="btn secondary"><i class="fas fa-file-csv"></i> Exporter en CSV</a>
-        <a href="{{ url_for('nettoyer_fichiers') }}" class="btn secondary"><i class="fas fa-broom"></i> Nettoyer les data</a>
+        <a href="{{ url_for('nettoyer_fichiers') }}" class="btn secondary"><i class="fas fa-broom"></i> Nettoyer les fichiers</a>
         <button id="verify-urls-btn" class="btn secondary"><i class="fas fa-link"></i> Vérifier les URLs</button>
     </div>
     <div id="url-check-results" class="admin-content" style="display:none; margin-top: 20px;">
@@ -204,19 +204,19 @@ document.addEventListener('DOMContentLoaded', function() {
             // Réinitialiser l'interface
             resultsDiv.style.display = 'block';
             verifyBtn.disabled = true;
-            verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Vérification...';
+            verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Vérification des URLs...';
             progressBar.style.width = '0%';
             progressBar.textContent = '0%';
             progressBar.style.backgroundColor = '#6c5ce7';
             resultsContainer.innerHTML = '<ul></ul><div id="summary"></div>';
+            const summaryDiv = document.getElementById('summary');
 
-            evtSource = new EventSource("{{ url_for('test_links_ajax') }}");
+            // L'origine est "collection" pour cette page
+            evtSource = new EventSource("{{ url_for('test_links_ajax', origin='collection') }}");
             let totalUrls = 0;
             let checkedCount = 0;
             let errors = 0;
             
-            const summaryDiv = document.getElementById('summary');
-
             evtSource.addEventListener('total', function(e) {
                 totalUrls = parseInt(e.data, 10);
                 summaryDiv.innerHTML = `<p>Vérification de ${totalUrls} URLs...</p>`;
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 evtSource.close();
                 summaryDiv.innerHTML = `<div class="notice error"><p>Une erreur de communication avec le serveur est survenue. Impossible de terminer la vérification.</p></div>`;
                 verifyBtn.disabled = false;
-                verifyBtn.innerHTML = '<i class="fas fa-check-double"></i> Vérifier les URLs';
+                verifyBtn.innerHTML = '<i class="fas fa-link"></i> Vérifier les URLs';
                 progressBar.style.backgroundColor = '#e74c3c';
             };
         });

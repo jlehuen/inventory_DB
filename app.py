@@ -717,44 +717,77 @@ def admin_edit_liens():
     return render_template('admin/edit_liens.html', liens_data=liens_data)
 
 
+def get_global_liens_urls():
+    """Charge les URLs du fichier static/liens.json et les retourne sous forme de set."""
+    json_path = os.path.join('static', 'liens.json')
+    global_urls = set()
+    try:
+        if os.path.exists(json_path):
+            with open(json_path, 'r', encoding='utf-8') as f:
+                global_liens_data = json.load(f)
+                for category in global_liens_data:
+                    for lien in category.get('liens', []):
+                        if 'url' in lien and lien['url']:
+                            global_urls.add(lien['url'])
+    except Exception as e:
+        app.logger.error(f"Erreur lors de la lecture de static/liens.json: {e}")
+    return global_urls
+
+def get_collection_liens_urls():
+    """Charge toutes les URLs uniques de la table 'liens' de la base de données."""
+    conn = get_db_connection()
+    db_liens = conn.execute('SELECT url FROM liens WHERE url IS NOT NULL AND url != ""').fetchall()
+    conn.close()
+    collection_urls = set(row['url'] for row in db_liens)
+    return collection_urls
+
+@app.route('/api/collection_urls')
+@login_required
+def api_collection_urls():
+    """Retourne toutes les URLs de la table 'liens' de la base de données au format JSON."""
+    urls = list(get_collection_liens_urls())
+    return jsonify(urls)
+
+@app.route('/api/global_liens_urls')
+@login_required
+def api_global_liens_urls():
+    """Retourne toutes les URLs du fichier static/liens.json au format JSON."""
+    urls = list(get_global_liens_urls())
+    return jsonify(urls)
+
 @app.route('/admin/test_links_ajax')
 @login_required
 def test_links_ajax():
     """
-    Teste toutes les URLs de la base de données et du fichier liens.json en streamant les résultats.
+    Teste une liste d'URLs fournie en streamant les résultats.
+    Les URLs à vérifier et à exclure sont déterminées côté serveur
+    en fonction du paramètre 'origin'.
     """
+    origin = request.args.get('origin')
+    urls_to_check = set()
+    excluded_urls = set() # URLs qui ne seront pas vérifiées
+
+    if origin == 'collection':
+        urls_to_check = get_collection_liens_urls()
+        excluded_urls = get_global_liens_urls() # Les liens globaux sont exclus de la vérification de la collection
+    elif origin == 'liens':
+        urls_to_check = get_global_liens_urls()
+        # Pas d'exclusion spécifique pour les liens globaux quand on les vérifie depuis leur propre page
+    else:
+        app.logger.error(f"Appel à test_links_ajax sans 'origin' valide: {origin}")
+        return Response("Erreur: Paramètre 'origin' manquant ou invalide.", status=400)
+
+    # Filtrer les URLs à vérifier en retirant celles à exclure
+    final_urls_to_check = sorted(list(urls_to_check - excluded_urls))
+
     def generate_results():
-        all_urls = set()
-
-        # 1. Récupérer les URLs de la base de données (table 'liens')
-        conn = get_db_connection()
-        db_liens = conn.execute('SELECT url FROM liens WHERE url IS NOT NULL AND url != ""').fetchall()
-        conn.close()
-
-        for row in db_liens:
-            all_urls.add(row['url'])
-
-        # 2. Récupérer les URLs du fichier static/liens.json
-        json_path = os.path.join('static', 'liens.json')
-        try:
-            if os.path.exists(json_path):
-                with open(json_path, 'r', encoding='utf-8') as f:
-                    global_liens_data = json.load(f)
-                    for category in global_liens_data:
-                        for lien in category.get('liens', []):
-                            if 'url' in lien and lien['url']:
-                                all_urls.add(lien['url'])
-        except Exception as e:
-            app.logger.error(f"Erreur lors de la lecture de static/liens.json pour le test de liens: {e}")
-        
-        sorted_urls = sorted(list(all_urls))
-        total_urls = len(sorted_urls)
+        total_urls = len(final_urls_to_check)
         checked_count = 0
 
         # Envoie le nombre total d'URLs à vérifier
         yield f"event: total\ndata: {total_urls}\n\n"
 
-        for url in sorted_urls:
+        for url in final_urls_to_check:
             status_code = None
             error_message = None
             try:
@@ -781,8 +814,8 @@ def test_links_ajax():
             except requests.exceptions.RequestException:
                 error_message = "Erreur de connexion"
                 status_code = 500 # Simule une erreur serveur pour le frontend
-            except Exception:
-                error_message = "Erreur inattendue"
+            except Exception as e:
+                error_message = f"Erreur inattendue: {e}"
                 status_code = 500
 
             checked_count += 1
