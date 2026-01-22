@@ -1,7 +1,7 @@
 {
   "Ordinateurs": {
     "icon": "fa-laptop",
-    "description": "Machines électroniques programmables conçues pour traiter des données selon des instructions prédéfinies. Cette collection comprend des micro-ordinateurs de différentes époques.",
+    "description": "Notre collection comprend des micro-ordinateurs de différentes époques, illustrant l'évolution de l'informatique personnelle depuis la fin des années 1970 jusqu'au début des année 2000, notamment avec une série de machines emblématiques dessinées par Jony Ive pour la marque à la pomme.",
     "attributes": [
       {
         "id": "processeur",
@@ -37,7 +37,7 @@
   },
   "Consoles de jeu": {
     "icon": "fa-gamepad",
-    "description": "Systèmes électroniques dédiés principalement aux jeux vidéo. Notre collection retrace l'évolution des consoles de jeux à travers les différentes générations.",
+    "description": "Si notre objectif n'est pas de retracer l'histoire vidéo-ludique, les consoles de jeu sont des ordinateurs dédiés et elles ont de ce fait toute leur place dans notre collection.",
     "attributes": [
       {
         "id": "processeur",
@@ -67,7 +67,7 @@
   },
   "Périphériques": {
     "icon": "fa-keyboard",
-    "description": "Dispositifs externes connectés aux ordinateurs pour étendre leurs fonctionnalités. Cette collection inclut claviers, souris, modems et autres périphériques d'entrée/sortie historiques.",
+    "description": "Les périphériques sont des dispositifs externes connectés aux ordinateurs pour étendre leurs fonctionnalités. Notre collection inclut des dispositifs de stockage et autres périphériques d'entrée/sortie.",
     "attributes": [
       {
         "id": "type",
@@ -85,7 +85,7 @@
   },
   "Calculatrices": {
     "icon": "fa-calculator",
-    "description": "Dispositifs électroniques portables conçus pour effectuer des calculs mathématiques. Notre collection présente l'évolution des calculatrices, des modèles simples aux calculatrices scientifiques programmables.",
+    "description": "Notre collection comporte quelques calculatrices (basiques, scientifiques, programmables) qui témoignent de l'évolution des outils de calcul depuis les années 1970.",
     "attributes": [
       {
         "id": "type",
@@ -97,7 +97,7 @@
   },
   "Stockages": {
     "icon": "fa-floppy-disk",
-    "description": "Dispositifs et supports dédiés au stockage de données numériques. Cette collection illustre l'évolution des technologies de stockage, des disquettes aux disques SSD en passant par les bandes magnétiques.",
+    "description": "Notre collection comporte une série de supports de stockage illustrant l'évolution des technologies, de la carte perforée aux disques SSD en passant par les disquettes et autres bandes magnétiques.",
     "attributes": [
       {
         "id": "techno",
@@ -121,7 +121,7 @@
   },
   "Livres": {
     "icon": "fa-book",
-    "description": "Ouvrages imprimés sur l'informatique, la programmation et l'histoire des technologies numériques. Cette collection comprend des manuels techniques, des livres de référence et des ouvrages historiques.",
+    "description": "Notre collection comprend des ouvrages de référence des années 80 et 90 sur les microprocesseurs et l'architecture des ordinateurs, ainsi que quelques documentations et manuels techniques.",
     "attributes": [
       {
         "id": "auteur",
@@ -151,7 +151,7 @@
   },
   "Divers": {
     "icon": "fa-cube",
-    "description": "Objets divers et curiosités numériques ne rentrant pas dans les autres catégories.",
+    "description": "Nous collectons et conservons également des objets et curiosités numériques ne rentrant pas dans les autres catégories.",
     "attributes": [
       {
         "id": "description",
