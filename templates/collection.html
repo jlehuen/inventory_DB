@@ -15,8 +15,16 @@
     {% if current_user.is_authenticated %}
     <div class="admin-header">
         <a href="{{ url_for('ajouter_objet') }}" class="btn"><i class="fas fa-plus"></i> Ajouter un objet</a>
-        <a href="{{ url_for('export_csv') }}" class="btn secondary"><i class="fas fa-file-csv"></i> Exporter CSV</a>
-        <a href="{{ url_for('nettoyer_fichiers') }}" class="btn secondary"><i class="fas fa-broom"></i> Nettoyer les fichiers</a>
+        <a href="{{ url_for('export_csv') }}" class="btn secondary"><i class="fas fa-file-csv"></i> Exporter en CSV</a>
+        <a href="{{ url_for('nettoyer_fichiers') }}" class="btn secondary"><i class="fas fa-broom"></i> Nettoyer les data</a>
+        <button id="verify-urls-btn" class="btn secondary"><i class="fas fa-link"></i> Vérifier les URLs</button>
+    </div>
+    <div id="url-check-results" class="admin-content" style="display:none; margin-top: 20px;">
+        <h2>Résultats de la vérification des URLs</h2>
+        <div class="progress-bar-container" style="margin-bottom: 15px;">
+            <div id="progress-bar" class="progress-bar" style="width: 0%;">&nbsp;</div>
+        </div>
+        <div id="results-container"></div>
     </div>
     {% endif %}
 
@@ -65,6 +73,60 @@
 
     .clickable-row:hover {
         background-color: rgba(46, 134, 222, 0.1) !important;
+    }
+
+    .progress-bar-container {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .progress-bar {
+        width: 0%;
+        height: 20px;
+        background-color: #6c5ce7;
+        text-align: center;
+        line-height: 20px;
+        color: white;
+        font-size: 12px;
+        transition: width 0.2s ease-in-out;
+    }
+    
+    #url-check-results ul {
+        list-style: none;
+        padding: 0;
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: #fff;
+    }
+    #url-check-results li {
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+        font-family: monospace;
+        font-size: 0.9rem;
+    }
+    #url-check-results li:last-child {
+        border-bottom: none;
+    }
+    #url-check-results li .fas {
+        margin-right: 12px;
+        font-size: 1.1rem;
+        color: #27ae60; /* green */
+    }
+    #url-check-results li.error .fas {
+        color: #e74c3c; /* red */
+    }
+    #url-check-results li.error {
+        background-color: #fff9f9;
+        color: #c0392b;
+    }
+    .error-msg {
+        font-style: italic;
+        margin-left: 5px;
     }
 </style>
 
@@ -126,6 +188,84 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     };
+    
+    // --- Vérification des URLs ---
+    const verifyBtn = document.getElementById('verify-urls-btn');
+    const resultsContainer = document.getElementById('results-container');
+    const resultsDiv = document.getElementById('url-check-results');
+    const progressBar = document.getElementById('progress-bar');
+    let evtSource;
+
+    if (verifyBtn) {
+        verifyBtn.addEventListener('click', function() {
+            // Si une vérification est déjà en cours, ne rien faire
+            if (verifyBtn.disabled) return;
+
+            // Réinitialiser l'interface
+            resultsDiv.style.display = 'block';
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Vérification...';
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+            progressBar.style.backgroundColor = '#6c5ce7';
+            resultsContainer.innerHTML = '<ul></ul><div id="summary"></div>';
+
+            evtSource = new EventSource("{{ url_for('test_links_ajax') }}");
+            let totalUrls = 0;
+            let checkedCount = 0;
+            let errors = 0;
+            
+            const summaryDiv = document.getElementById('summary');
+
+            evtSource.addEventListener('total', function(e) {
+                totalUrls = parseInt(e.data, 10);
+                summaryDiv.innerHTML = `<p>Vérification de ${totalUrls} URLs...</p>`;
+            });
+
+            evtSource.addEventListener('message', function(e) {
+                const result = JSON.parse(e.data);
+                checkedCount++;
+
+                const progress = totalUrls > 0 ? (checkedCount / totalUrls) * 100 : 0;
+                progressBar.style.width = progress + '%';
+                progressBar.textContent = Math.round(progress) + '%';
+
+                const list = resultsContainer.querySelector('ul');
+                let listItem = '';
+                if (result.status_code >= 400 || result.error_message) {
+                    errors++;
+                    listItem = `<li class="error"><i class="fas fa-exclamation-triangle"></i> <strong>[${result.status_code || 'ERREUR'}]</strong> ${result.url} <span class="error-msg">- ${result.error_message || 'Erreur HTTP'}</span></li>`;
+                } else {
+                    listItem = `<li><i class="fas fa-check-circle"></i> <strong>[${result.status_code}]</strong> ${result.url}</li>`;
+                }
+                list.insertAdjacentHTML('beforeend', listItem);
+            });
+            
+            evtSource.addEventListener('done', function(e) {
+                evtSource.close();
+                verifyBtn.disabled = false;
+                verifyBtn.innerHTML = '<i class="fas fa-link"></i> Revérifier les URLs';
+                progressBar.style.width = '100%';
+                
+                if (errors > 0) {
+                    summaryDiv.innerHTML = `<h3><i class="fas fa-exclamation-triangle"></i> ${errors} lien(s) défectueux sur ${totalUrls} vérifié(s).</h3>`;
+                    progressBar.style.backgroundColor = '#e74c3c';
+                } else {
+                    summaryDiv.innerHTML = '<h3><i class="fas fa-check-circle" style="color: #27ae60;"></i> Tous les liens sont valides !</h3><p>Aucune erreur détectée sur les URLs de la base de données et des ressources web.</p>';
+                    progressBar.style.backgroundColor = '#27ae60';
+                }
+            });
+
+            evtSource.onerror = function(err) {
+                console.error("EventSource failed:", err);
+                evtSource.close();
+                summaryDiv.innerHTML = `<div class="notice error"><p>Une erreur de communication avec le serveur est survenue. Impossible de terminer la vérification.</p></div>`;
+                verifyBtn.disabled = false;
+                verifyBtn.innerHTML = '<i class="fas fa-check-double"></i> Vérifier les URLs';
+                progressBar.style.backgroundColor = '#e74c3c';
+            };
+        });
+    }
 
     // Sélectionner le tableau et initialiser les événements
     const table = document.getElementById('collection-table');

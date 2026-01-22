@@ -15,7 +15,7 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from PIL import Image
 
-from flask import Flask, render_template, request, redirect, url_for, flash, abort, send_file, send_from_directory, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, send_file, send_from_directory, jsonify, Response, stream_with_context
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests # Ajout de la bibliothèque requests
@@ -721,59 +721,86 @@ def admin_edit_liens():
 @login_required
 def test_links_ajax():
     """
-    Teste toutes les URLs de la base de données et du fichier liens.json.
-    Retourne les résultats au format JSON.
+    Teste toutes les URLs de la base de données et du fichier liens.json en streamant les résultats.
     """
-    all_urls = set()
-    results = []
+    def generate_results():
+        all_urls = set()
 
-    # 1. Récupérer les URLs de la base de données (table 'liens')
-    conn = get_db_connection()
-    db_liens = conn.execute('SELECT url FROM liens WHERE url IS NOT NULL AND url != ""').fetchall()
-    conn.close()
+        # 1. Récupérer les URLs de la base de données (table 'liens')
+        conn = get_db_connection()
+        db_liens = conn.execute('SELECT url FROM liens WHERE url IS NOT NULL AND url != ""').fetchall()
+        conn.close()
 
-    for row in db_liens:
-        all_urls.add(row['url'])
+        for row in db_liens:
+            all_urls.add(row['url'])
 
-    # 2. Récupérer les URLs du fichier static/liens.json
-    json_path = os.path.join('static', 'liens.json')
-    try:
-        if os.path.exists(json_path):
-            with open(json_path, 'r', encoding='utf-8') as f:
-                global_liens_data = json.load(f)
-                for category in global_liens_data:
-                    for lien in category.get('liens', []):
-                        if 'url' in lien and lien['url']:
-                            all_urls.add(lien['url'])
-    except Exception as e:
-        app.logger.error(f"Erreur lors de la lecture de static/liens.json pour le test de liens: {e}")
-
-    # 3. Tester chaque URL
-    for url in sorted(list(all_urls)): # Trier pour une sortie cohérente
-        status_code = None
-        error_message = None
+        # 2. Récupérer les URLs du fichier static/liens.json
+        json_path = os.path.join('static', 'liens.json')
         try:
-            # Utilisez HEAD pour vérifier la disponibilité sans télécharger le contenu complet
-            # ou GET si HEAD n'est pas fiable, avec un timeout court
-            response = requests.get(url, timeout=5, allow_redirects=True)
-            status_code = response.status_code
-        except requests.exceptions.Timeout:
-            error_message = "Délai d'attente dépassé (Timeout)"
-            status_code = 408 # Request Timeout
-        except requests.exceptions.RequestException as e:
-            error_message = f"Erreur de connexion: {e}"
-            status_code = 500 # Internal Server Error ou autre erreur générique de connexion
+            if os.path.exists(json_path):
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    global_liens_data = json.load(f)
+                    for category in global_liens_data:
+                        for lien in category.get('liens', []):
+                            if 'url' in lien and lien['url']:
+                                all_urls.add(lien['url'])
         except Exception as e:
-            error_message = f"Erreur inattendue: {e}"
-            status_code = 500 # Internal Server Error
+            app.logger.error(f"Erreur lors de la lecture de static/liens.json pour le test de liens: {e}")
         
-        results.append({
-            'url': url,
-            'status_code': status_code,
-            'error_message': error_message
-        })
-    
-    return jsonify(results)
+        sorted_urls = sorted(list(all_urls))
+        total_urls = len(sorted_urls)
+        checked_count = 0
+
+        # Envoie le nombre total d'URLs à vérifier
+        yield f"event: total\ndata: {total_urls}\n\n"
+
+        for url in sorted_urls:
+            status_code = None
+            error_message = None
+            try:
+                # Ajouter un User-Agent et des en-têtes de navigateur pour éviter les blocages
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                    'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Upgrade-Insecure-Requests': '1',
+                    'Sec-Fetch-Dest': 'document',
+                    'Sec-Fetch-Mode': 'navigate',
+                    'Sec-Fetch-Site': 'none',
+                    'Sec-Fetch-User': '?1',
+                }
+                # Utiliser une requête GET avec un timeout court et des en-têtes complets
+                response = requests.get(url, timeout=7, allow_redirects=True, headers=headers)
+                status_code = response.status_code
+                if status_code >= 400:
+                    error_message = f"Erreur HTTP {status_code}"
+            except requests.exceptions.Timeout:
+                error_message = "Délai d'attente dépassé (Timeout)"
+                status_code = 408
+            except requests.exceptions.RequestException:
+                error_message = "Erreur de connexion"
+                status_code = 500 # Simule une erreur serveur pour le frontend
+            except Exception:
+                error_message = "Erreur inattendue"
+                status_code = 500
+
+            checked_count += 1
+            progress = (checked_count / total_urls) * 100 if total_urls > 0 else 0
+
+            result_data = {
+                'url': url,
+                'status_code': status_code,
+                'error_message': error_message,
+                'progress': round(progress)
+            }
+            # Envoie un événement "message"
+            yield f"data: {json.dumps(result_data)}\n\n"
+        
+        # Envoie un événement de fin
+        yield "event: done\ndata: Vérification terminée\n\n"
+
+    return Response(stream_with_context(generate_results()), mimetype='text/event-stream')
 
 
 @app.route('/admin')
