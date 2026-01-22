@@ -15,9 +15,10 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from PIL import Image
 
-from flask import Flask, render_template, request, redirect, url_for, flash, abort, send_file, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, send_file, send_from_directory, jsonify
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
+import requests # Ajout de la bibliothèque requests
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import StringField, PasswordField, SubmitField
@@ -670,11 +671,9 @@ def admin_edit_liens():
     
     if request.method == 'POST':
         json_content = request.form.get('json_content')
-        data = []
         try:
             # Vérifier que c'est du JSON valide
             parsed_json = json.loads(json_content)
-            data = parsed_json
             
             # Sauvegarder avec une jolie mise en forme
             with open(json_path, 'w', encoding='utf-8') as f:
@@ -685,29 +684,21 @@ def admin_edit_liens():
         except json.JSONDecodeError as e:
             flash(f'Erreur de syntaxe JSON : {e}', 'error')
             # On renvoie le contenu erroné pour que l'utilisateur puisse corriger sans tout perdre
-            # On passe json_data=None pour éviter que le JS n'essaie d'écraser le textarea avec des données invalides
-            return render_template('admin/edit_liens.html', json_content=json_content, json_data=None)
+            return render_template('admin/edit_liens.html', json_content=json_content)
         except Exception as e:
             app.logger.error(f"Erreur lors de la sauvegarde des liens: {e}")
             flash(f'Une erreur est survenue lors de l\'enregistrement : {e}', 'error')
-            # Tentative de récupération des données si possible
-            try:
-                 data = json.loads(json_content)
-            except:
-                 data = None
-            return render_template('admin/edit_liens.html', json_content=json_content, json_data=data)
+            return render_template('admin/edit_liens.html', json_content=json_content)
 
     # Chargement initial (GET)
-    data = []
+    liens_data = []
     try:
         if os.path.exists(json_path):
             with open(json_path, 'r', encoding='utf-8') as f:
-                # On charge et redump pour garantir un formatage propre dans l'éditeur
-                data = json.load(f)
-                json_content = json.dumps(data, indent=4, ensure_ascii=False)
+                liens_data = json.load(f)
         else:
             # Modèle par défaut si le fichier n'existe pas
-            default_data = [
+            liens_data = [
                 {
                     "categorie": "Exemple de catégorie",
                     "liens": [
@@ -719,14 +710,70 @@ def admin_edit_liens():
                     ]
                 }
             ]
-            data = default_data
-            json_content = json.dumps(default_data, indent=4, ensure_ascii=False)
     except Exception as e:
         app.logger.error(f"Erreur lecture liens.json: {e}")
-        json_content = "[]"
-        data = []
+        liens_data = [] # En cas d'erreur, on envoie un tableau vide
 
-    return render_template('admin/edit_liens.html', json_content=json_content, json_data=data)
+    return render_template('admin/edit_liens.html', liens_data=liens_data)
+
+
+@app.route('/admin/test_links_ajax')
+@login_required
+def test_links_ajax():
+    """
+    Teste toutes les URLs de la base de données et du fichier liens.json.
+    Retourne les résultats au format JSON.
+    """
+    all_urls = set()
+    results = []
+
+    # 1. Récupérer les URLs de la base de données (table 'liens')
+    conn = get_db_connection()
+    db_liens = conn.execute('SELECT url FROM liens WHERE url IS NOT NULL AND url != ""').fetchall()
+    conn.close()
+
+    for row in db_liens:
+        all_urls.add(row['url'])
+
+    # 2. Récupérer les URLs du fichier static/liens.json
+    json_path = os.path.join('static', 'liens.json')
+    try:
+        if os.path.exists(json_path):
+            with open(json_path, 'r', encoding='utf-8') as f:
+                global_liens_data = json.load(f)
+                for category in global_liens_data:
+                    for lien in category.get('liens', []):
+                        if 'url' in lien and lien['url']:
+                            all_urls.add(lien['url'])
+    except Exception as e:
+        app.logger.error(f"Erreur lors de la lecture de static/liens.json pour le test de liens: {e}")
+
+    # 3. Tester chaque URL
+    for url in sorted(list(all_urls)): # Trier pour une sortie cohérente
+        status_code = None
+        error_message = None
+        try:
+            # Utilisez HEAD pour vérifier la disponibilité sans télécharger le contenu complet
+            # ou GET si HEAD n'est pas fiable, avec un timeout court
+            response = requests.get(url, timeout=5, allow_redirects=True)
+            status_code = response.status_code
+        except requests.exceptions.Timeout:
+            error_message = "Délai d'attente dépassé (Timeout)"
+            status_code = 408 # Request Timeout
+        except requests.exceptions.RequestException as e:
+            error_message = f"Erreur de connexion: {e}"
+            status_code = 500 # Internal Server Error ou autre erreur générique de connexion
+        except Exception as e:
+            error_message = f"Erreur inattendue: {e}"
+            status_code = 500 # Internal Server Error
+        
+        results.append({
+            'url': url,
+            'status_code': status_code,
+            'error_message': error_message
+        })
+    
+    return jsonify(results)
 
 
 @app.route('/admin')

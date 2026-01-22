@@ -31,9 +31,6 @@
                 <li><a href="{{ url_for('categories') }}">Catégories</a></li>
                 <li><a href="{{ url_for('collection') }}">Collection</a></li>
                 <li><a href="{{ url_for('liens') }}">Liens</a></li>
-                {% if current_user.is_authenticated %}
-                    <li><a href="{{ url_for('admin_security') }}">Sécurité</a></li>
-                {% endif %}
                 <li>
                     <form action="{{ url_for('recherche') }}" method="get" class="search-form">
                         <input type="text" name="q" placeholder="Rechercher...">
@@ -70,7 +67,9 @@
         <div class="footer-content">
             <div class="footer-section">
                 <h3>À propos</h3>
-                <p>Collection d'ordinateurs, de dispositifs numériques et d'ouvrages sur l'informatique du Musée Martial Vivet à l'Institut d'Informatique Claude Chappe (IC2).</p>
+                <p>Ce site présente la collection d’ordinateurs, de dispositifs numériques et d’ouvrages consacrés à l’informatique du Musée Martial Vivet.
+                Cette collection est conservée au sein de l’Institut d’Informatique Claude Chappe (IC2) à l’Université du Mans (Sarthe).
+                Elle est mise en valeur au travers d'événements et de visites organisés par l’Institut d’Informatique Claude Chappe.</p>
             </div>
             <div class="footer-section">
                 <h3>Contacts</h3>
@@ -79,21 +78,6 @@
                 <p>Site web Institut Claude Chappe : <a href="https://ic2.univ-lemans.fr" target="_blank">https://ic2.univ-lemans.fr</a></p>
                 <p>Téléphone Institut Claude Chappe : +33 2 43 83 38 30</p>
             </div>
-            <!--
-            <div class="footer-section">
-                <h3>Liens utiles</h3>
-                <ul>
-                    <li><a href="{{ url_for('index') }}">Accueil</a></li>
-                    <li><a href="{{ url_for('categories') }}">Catégories</a></li>
-                    <li><a href="{{ url_for('collection') }}">Collection</a></li>
-                    {% if current_user.is_authenticated %}
-                        <li><a href="{{ url_for('logout') }}">Déconnexion</a></li>
-                    {% else %}
-                        <li><a href="{{ url_for('login') }}">Connexion</a></li>
-                    {% endif %}
-                </ul>
-            </div>
-            -->
         </div>
         <div class="copyright">
             <p>&copy; 2026 Le Mans Université. Tous droits réservés.</p>

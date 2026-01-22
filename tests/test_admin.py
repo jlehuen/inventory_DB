@@ -82,3 +82,4 @@ def test_ajouter_objet(client, auth, app_fixture):
         assert objet['nom'] == 'Microscope Test'
         assert 'Grossissement' in objet['attributs_specifiques']
         assert '100x' in objet['attributs_specifiques']
+

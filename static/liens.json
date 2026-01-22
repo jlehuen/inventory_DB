@@ -1,17 +1,12 @@
 [
     {
-        "categorie": "Bases de données nationales",
+        "categorie": "Bases de données et catalogues",
         "liens": [
             {
                 "description": "Site de l'association MO5",
                 "nom": "MO5",
                 "url": "https://mo5.com/fr/"
-            }
-        ]
-    },
-    {
-        "categorie": "Catalogues Informatiques",
-        "liens": [
+            },
             {
                 "description": "Base de données qui référence plus de 4000 calculatrices",
                 "nom": "Calcuseum",
@@ -23,19 +18,49 @@
         "categorie": "Émulateurs d'ordinateurs vintages en ligne",
         "liens": [
             {
-                "description": "This is a TypeScript-based TRS-80 Model I and Model III emulator.",
-                "nom": "TRS-80 Emulator",
-                "url": "https://github.com/lkesteloot/trs80/tree/master/packages/trs80-emulator"
+                "description": "",
+                "nom": "PDP-8 (1965)",
+                "url": "https://pop.aconit.org/"
             },
             {
                 "description": "",
-                "nom": "Minitel",
+                "nom": "TRS-80 Model I",
+                "url": "https://www.my-trs-80.com/"
+            },
+            {
+                "description": "",
+                "nom": "TRS-80 Model III",
+                "url": "http://trsjs.48k.ca/"
+            },
+            {
+                "description": "",
+                "nom": "Minitel 1 (1980)",
                 "url": "https://www.minipavi.fr/emulminitel/index.php"
             },
             {
                 "description": "",
-                "nom": "ZX81",
+                "nom": "Commodore PET (1977)",
+                "url": "https://www.masswerk.at/pet/"
+            },
+            {
+                "description": "",
+                "nom": "Sinclair ZX81 (1981)",
                 "url": "https://www.zx81stuff.org.uk/zx81/jtyone.html"
+            },
+            {
+                "description": "",
+                "nom": "DRAGON 32 (1982)",
+                "url": "https://www.6809.org.uk/xroar/online/"
+            },
+            {
+                "description": "",
+                "nom": "Oric Atmos (1984)",
+                "url": "https://torguet.net/oric/oricutron.html"
+            },
+            {
+                "description": "",
+                "nom": "Macintosh (1984)",
+                "url": "https://infinitemac.org/1984/System%201.0"
             }
         ]
     }

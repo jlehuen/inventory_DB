@@ -37,6 +37,7 @@ backups/*
 logs/*
 !logs/.gitkeep
 *.log
+!logs/app.log
 
 # Fichiers temporaires ou générés
 utils/sync_categories.log
