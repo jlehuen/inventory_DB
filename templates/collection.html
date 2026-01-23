@@ -50,7 +50,8 @@
                         <a href="{{ url_for('detail_objet', id=objet['id']) }}" class="btn-small" title="Voir les détails"><i class="fas fa-eye"></i></a>
                         <a href="{{ url_for('generate_pdf', id=objet['id']) }}" class="btn-small" target="_blank" title="GÉNÉRER UN PDF"><i class="fas fa-file-pdf"></i></a>
                         {% if current_user.is_authenticated %}
-                            <a href="{{ url_for('modifier_objet', id=objet['id']) }}" class="btn-small" title="Modifier la fiche"><i class="fas fa-edit"></i></a>
+                            <a href="{{ url_for('generate_cartel', id=objet['id']) }}" class="btn-small" target="_blank" title="Générer le cartel"><i class="fas fa-tag"></i></a>
+                            <a href="{{ url_for('modifier_objet', id=objet['id']) }}" class="btn-small save" title="Modifier la fiche"><i class="fas fa-edit"></i></a>
                             <form action="{{ url_for('supprimer_objet', id=objet['id']) }}" method="post" class="inline-form" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet objet ?');">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn-small danger"><i class="fas fa-trash"></i></button>

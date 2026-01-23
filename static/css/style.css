@@ -546,7 +546,7 @@ main.wide-container {
     display: flex;
     align-items: center;
     gap: 10px;
-    width: 200px;
+    width: 220px;
 }
 
 .inline-form {
@@ -990,3 +990,9 @@ footer {
         min-height: calc(100vh - 130px); /* Assure une hauteur minimale pour le contenu */
     }
 }
+
+/* Custom spacing classes */
+.mt-small {
+    margin-top: 0.8rem;
+}
+

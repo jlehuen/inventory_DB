@@ -37,7 +37,7 @@
   },
   "Consoles de jeu": {
     "icon": "fa-gamepad",
-    "description": "Les consoles de jeu sont présentées ici comme des systèmes informatiques (ordinateurs spécialisés). La collection a vocation à présenter des machines de différentes générations qui illustrent l'évolution des performances et des architectures matérielles.",
+    "description": "Si notre collection n'a pas vocation à retracer l'histoire du jeu vidéo, les consoles vidéoludiques, en tant qu'ordinateurs spécialisés ayant souvent apportés des innovations technologiques, y trouvent naturellement leur place.",
     "attributes": [
       {
         "id": "processeur",

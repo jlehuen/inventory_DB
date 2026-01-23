@@ -463,6 +463,11 @@ def contribuer():
     """Affiche la page d'appel aux contributions."""
     return render_template('contribuer.html')
 
+@app.route('/martial_vivet')
+def martial_vivet():
+    """Affiche la biographie de Martial Vivet."""
+    return render_template('martial_vivet.html')
+
 # Route pour servir les fichiers depuis database/uploads
 @app.route('/static/database/uploads/<path:filename>')
 def serve_upload(filename):
@@ -793,7 +798,7 @@ def test_links_ajax():
             try:
                 # Ajouter un User-Agent et des en-têtes de navigateur pour éviter les blocages
                 headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
                     'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
                     'Accept-Encoding': 'gzip, deflate, br',
