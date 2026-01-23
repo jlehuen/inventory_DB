@@ -36,10 +36,7 @@
             <small>La catégorie détermine quels champs supplémentaires sont disponibles</small>
         </div>
 
-        <div class="form-group" id="autre-categorie-container" style="display: none;">
-            <label for="autre-categorie">Préciser la catégorie *</label>
-            <input type="text" id="autre-categorie" name="autre-categorie" value="{{ objet['categorie'] if objet['categorie'] and objet['categorie'] not in ['Ordinateur', 'Console de jeu', 'Périphérique', 'Appareil photo'] else '' }}">
-        </div>
+
 
         <div class="form-group">
             <label for="fabricant">Fabricant (ou éditeur)</label>
@@ -206,12 +203,6 @@
             categorieSelect.appendChild(option);
         }
 
-        // Ajouter explicitement l'option "Autre"
-        const optionAutre = document.createElement('option');
-        optionAutre.value = "Autre";
-        optionAutre.textContent = "Autre / Personnalisée";
-        categorieSelect.appendChild(optionAutre);
-
         // Récupérer la catégorie de l'objet depuis le serveur de manière sécurisée
         const serverCategorie = {{ objet['categorie']|tojson|safe }};
 
@@ -225,11 +216,6 @@
             // Vérifier si la valeur existe dans les options
             if (Array.from(categorieSelect.options).some(opt => opt.value === targetValue)) {
                 categorieSelect.value = targetValue;
-            } else if (targetValue && targetValue !== "Autre") {
-                // Si la catégorie n'existe pas dans la liste (ex: catégorie perso ou renommée), on passe en mode "Autre"
-                categorieSelect.value = "Autre";
-                document.getElementById('autre-categorie').value = targetValue;
-                toggleAutreCategorie();
             }
         }
     }
@@ -295,7 +281,7 @@
         container.innerHTML = '';
 
         // Gérer le cas "Autre" et les catégories sans attributs spécifiques définis
-        if (categorie === 'Autre' || !categorieAttributs[categorie]) {
+        if (!categorieAttributs[categorie]) {
             container.innerHTML = '<p>Aucun attribut spécifique disponible pour cette catégorie</p>';
             return;
         }
@@ -358,20 +344,6 @@
             divElement.appendChild(labelInput);
             container.appendChild(divElement);
         });
-    }
-
-    // Gérer l'affichage du champ "Autre catégorie"
-    function toggleAutreCategorie() {
-        const categorieSelect = document.getElementById('categorie');
-        const autreCategorieContainer = document.getElementById('autre-categorie-container');
-
-        if (categorieSelect.value === 'Autre') {
-            autreCategorieContainer.style.display = 'block';
-            document.getElementById('autre-categorie').setAttribute('required', 'required');
-        } else {
-            autreCategorieContainer.style.display = 'none';
-            document.getElementById('autre-categorie').removeAttribute('required');
-        }
     }
 
     let imageIndex = 1;
@@ -476,28 +448,12 @@
 
         // Écouter les changements de catégorie
         categorieSelect.addEventListener('change', function() {
-            toggleAutreCategorie();
             chargerAttributsSpecifiques();
         });
 
         // Intercepter la soumission du formulaire pour gérer "Autre catégorie"
         form.addEventListener('submit', function(e) {
-            if (categorieSelect.value === 'Autre') {
-                const autreCategorie = document.getElementById('autre-categorie').value.trim();
-                if (autreCategorie) {
-                    e.preventDefault(); // Empêcher la soumission standard
-
-                    // Créer un champ caché pour la catégorie personnalisée
-                    const hiddenInput = document.createElement('input');
-                    hiddenInput.type = 'hidden';
-                    hiddenInput.name = 'categorie_personnalisee';
-                    hiddenInput.value = autreCategorie;
-                    form.appendChild(hiddenInput);
-
-                    // Soumettre le formulaire
-                    form.submit();
-                }
-            }
+            
         });
     });
 </script>

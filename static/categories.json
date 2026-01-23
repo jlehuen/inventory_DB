@@ -1,7 +1,7 @@
 {
   "Ordinateurs": {
     "icon": "fa-laptop",
-    "description": "Cette catégorie regroupe des ordinateurs personnels, des stations de travail et des systèmes portables. La collection couvre principalement la période des pionniers de la micro-informatique (années 1970) jusqu'au début des années 2000, illustrant divers aspects de l'histoire des ordinateurs.",
+    "description": "Cette catégorie regroupe des ordinateurs personnels, des stations de travail et des systèmes portables. La collection couvre principalement la période des pionniers de la micro-informatique (années 1970) jusqu'au début des années 2000, illustrant divers aspects de l'histoire des micro-ordinateurs.",
     "attributes": [
       {
         "id": "processeur",
@@ -121,7 +121,7 @@
   },
   "Livres": {
     "icon": "fa-book",
-    "description": "Notre collection comprend des manuels techniques, des ouvrages de référence sur les microprocesseurs et leur programmation (assembleur), sur l'architecture des ordinateurs, ainsi que sur les systèmes d'exploitation.",
+    "description": "Notre collection comprend des manuels techniques, des ouvrages de référence anciens sur les microprocesseurs et leur programmation (assembleur), sur l'architecture des ordinateurs, ainsi que sur les systèmes d'exploitation.",
     "attributes": [
       {
         "id": "auteur",
@@ -151,7 +151,7 @@
   },
   "Divers": {
     "icon": "fa-cube",
-    "description": "Cette catégorie rassemble des objets qui ne rentrent pas dans les autres catégories, mais qui présentent un intérêt pour l'histoire de l'informatique et des technologies numériques, tels que les terminaux télématiques ou les assistants personnels par exemple.",
+    "description": "Cette catégorie rassemble des objets qui ne rentrent pas dans les autres catégories, mais qui présentent un intérêt pour l'histoire de l'informatique et des technologies numériques, tels que les terminaux télématiques ou les assistants personnels (PDA) par exemple.",
     "attributes": [
       {
         "id": "description",

@@ -3,7 +3,7 @@
 :root {
     /* Nouvelle palette de couleurs moderne */
     --primary-color: #1a4b84;       /* Bleu profond */
-    --secondary-color: #2e86de;     /* Bleu vif */
+    --secondary-color: #5DADE2;     /* Bleu vif */
     --accent-color: #e74c3c;        /* Rouge vif (inchangé) */
     --light-color: #f5f7fa;         /* Gris très clair */
     --dark-color: #2c3e50;          /* Bleu foncé (inchangé) */
@@ -434,6 +434,10 @@ footer {
 .footer-section a:hover {
     color: white;
     transform: translateX(5px);
+}
+
+.footer-section a.footer-link-highlight {
+    color: var(--secondary-color) !important;
 }
 
 .copyright {
