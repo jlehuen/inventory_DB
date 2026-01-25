@@ -25,8 +25,10 @@
     <div class="hero-content">
         <h1>Musée Martial Vivet</h1>
         <p>Catalogue des collections du CCNM</p>
-        <a href="{{ url_for('collection') }}" class="btn">Voir la collection</a>
-        <button id="btn-random" class="btn" style="margin-left: 10px;">3 Objets au hasard</button>
+        <div class="hero-buttons">
+            <a href="{{ url_for('collection') }}" class="btn">Voir la collection</a>
+            <button id="btn-random" class="btn">3 Objets au hasard</button>
+        </div>
     </div>
 </section>
 
