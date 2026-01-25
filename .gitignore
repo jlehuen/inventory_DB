@@ -19,6 +19,7 @@ venv/
 passwrd.txt
 instance/
 install_ic2.sh
+update_ic2.sh
 
 # Base de données
 database/database.db
