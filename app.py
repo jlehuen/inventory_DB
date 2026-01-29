@@ -454,7 +454,7 @@ def random_object_fragment():
 def index():
     """Affiche la page d'accueil avec les derniers objets ajoutés."""
     conn = get_db_connection()
-    objets = conn.execute('SELECT * FROM objets ORDER BY date_ajout DESC').fetchall()
+    objets = conn.execute('SELECT * FROM objets ORDER BY date_ajout DESC LIMIT 8').fetchall()
     conn.close()
     return render_template('index.html', objets=objets)
 

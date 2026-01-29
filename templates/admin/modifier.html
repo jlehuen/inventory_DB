@@ -36,6 +36,11 @@
             <small>La catégorie détermine quels champs supplémentaires sont disponibles</small>
         </div>
 
+        <div class="form-group" id="autre-categorie-container" style="display: none;">
+            <label for="autre-categorie">Préciser la catégorie *</label>
+            <input type="text" id="autre-categorie" name="autre-categorie">
+        </div>
+
 
 
         <div class="form-group">
@@ -181,12 +186,26 @@
     // Variable pour stocker les attributs chargés depuis le JSON
     let categorieAttributs = {};
 
+    // Gérer l'affichage du champ "Autre catégorie"
+    function toggleAutreCategorie() {
+        const categorieSelect = document.getElementById('categorie');
+        const autreCategorieContainer = document.getElementById('autre-categorie-container');
+        const autreCategorieInput = document.getElementById('autre-categorie');
+
+        if (categorieSelect.value === 'Autre') {
+            autreCategorieContainer.style.display = 'block';
+            autreCategorieInput.setAttribute('required', 'required');
+        } else {
+            autreCategorieContainer.style.display = 'none';
+            autreCategorieInput.removeAttribute('required');
+            autreCategorieInput.value = ''; // Vider le champ si on change
+        }
+    }
+
     // Fonction pour remplir le sélecteur de catégories à partir du JSON
     function remplirCategories() {
         const categorieSelect = document.getElementById('categorie');
-        // Sauvegarder la valeur actuelle (si l'utilisateur a déjà changé quelque chose)
-        // Mais attention à ne pas garder la valeur par défaut "" si on est en train d'initialiser
-        let categorieValue = categorieSelect.value; 
+        const serverCategorie = {{ objet['categorie']|tojson|safe }};
 
         // Vider le sélecteur sauf l'option par défaut
         while (categorieSelect.options.length > 1) {
@@ -203,19 +222,21 @@
             categorieSelect.appendChild(option);
         }
 
-        // Récupérer la catégorie de l'objet depuis le serveur de manière sécurisée
-        const serverCategorie = {{ objet['categorie']|tojson|safe }};
+        // Ajouter l'option "Autre"
+        const autreOption = document.createElement('option');
+        autreOption.value = 'Autre';
+        autreOption.textContent = 'Autre (préciser)';
+        categorieSelect.appendChild(autreOption);
 
-        // Logique de sélection :
-        // 1. Si on a une valeur déjà sélectionnée manuellement (et pas vide), on essaie de la garder
-        // 2. Sinon, on utilise la valeur du serveur
-        
-        let targetValue = categorieValue || serverCategorie;
-
-        if (targetValue) {
-            // Vérifier si la valeur existe dans les options
-            if (Array.from(categorieSelect.options).some(opt => opt.value === targetValue)) {
-                categorieSelect.value = targetValue;
+        // Logique de présélection
+        if (serverCategorie) {
+            // Vérifier si la catégorie de l'objet existe dans la liste standard
+            if (categories.includes(serverCategorie)) {
+                categorieSelect.value = serverCategorie;
+            } else {
+                // Sinon, sélectionner "Autre" et remplir le champ de texte
+                categorieSelect.value = 'Autre';
+                document.getElementById('autre-categorie').value = serverCategorie;
             }
         }
     }
@@ -230,7 +251,6 @@
             }
             const categoriesData = await response.json();
 
-            // Adapter au nouveau format JSON (extraire uniquement les attributs)
             categorieAttributs = {};
             for (const categorie in categoriesData) {
                 if (categoriesData[categorie].attributes) {
@@ -238,15 +258,11 @@
                 }
             }
 
-            // Remplir le sélecteur de catégories
             remplirCategories();
-
-            // Initialiser les champs du formulaire
-            toggleAutreCategorie();
+            toggleAutreCategorie(); // Appel important pour l'état initial
             chargerAttributsSpecifiques();
         } catch (error) {
             console.error("Erreur lors du chargement des définitions d'attributs:", error);
-            // En cas d'erreur, on définit un objet vide
             categorieAttributs = {};
             toggleAutreCategorie();
             chargerAttributsSpecifiques();
@@ -277,16 +293,13 @@
         const categorie = document.getElementById('categorie').value;
         const container = document.getElementById('attributs-specifiques-container');
 
-        // Vider le conteneur
         container.innerHTML = '';
 
-        // Gérer le cas "Autre" et les catégories sans attributs spécifiques définis
         if (!categorieAttributs[categorie]) {
-            container.innerHTML = '<p>Aucun attribut spécifique disponible pour cette catégorie</p>';
+            container.innerHTML = '<p>Aucun attribut spécifique disponible pour cette catégorie.</p>';
             return;
         }
 
-        // Créer les champs pour chaque attribut
         categorieAttributs[categorie].forEach(attr => {
             const divElement = document.createElement('div');
             divElement.className = 'form-group';
@@ -300,36 +313,27 @@
             inputElement.setAttribute('id', `attr_${attr.id}`);
             inputElement.setAttribute('name', `attr_${attr.id}`);
 
-            // Ajouter un champ caché pour l'ordre
             const orderInput = document.createElement('input');
             orderInput.setAttribute('type', 'hidden');
             orderInput.setAttribute('name', `attr_ordre_${attr.id}`);
             orderInput.setAttribute('value', attr.ordre);
 
-            // Ajouter un champ caché pour le label
             const labelInput = document.createElement('input');
             labelInput.setAttribute('type', 'hidden');
             labelInput.setAttribute('name', `attr_label_${attr.id}`);
             labelInput.setAttribute('value', attr.label);
 
-            // Pour le formulaire de modification, précharger les valeurs si elles existent
             {% if objet['attributs_specifiques'] %}
             try {
-                const attributsSpecifiques = JSON.parse({{ objet["attributs_specifiques"]|tojson|safe }});
+                const attributsSpecifiques = {{ objet['attributs_specifiques'] | from_json | tojson | safe }};
                 if (attributsSpecifiques && attributsSpecifiques[attr.id]) {
-                    // On vérifie si c'est un objet ou une simple valeur
                     if (typeof attributsSpecifiques[attr.id] === 'object' && attributsSpecifiques[attr.id] !== null) {
-                        // Si c'est un objet with une propriété 'valeur', utiliser cette valeur
                         if ('valeur' in attributsSpecifiques[attr.id]) {
                             inputElement.value = attributsSpecifiques[attr.id].valeur;
-                        }
-                        // Sinon, utiliser une chaîne vide pour éviter [object Object]
-                        else {
+                        } else {
                             inputElement.value = '';
-                            console.warn(`Format incorrect pour l'attribut ${attr.id}:`, attributsSpecifiques[attr.id]);
                         }
                     } else {
-                        // Pour les valeurs non-objet (string, number, etc.)
                         inputElement.value = attributsSpecifiques[attr.id] || '';
                     }
                 }
@@ -352,108 +356,84 @@
         const container = document.getElementById('nouvelles-images-container');
         const newItem = document.createElement('div');
         newItem.className = 'image-upload-item';
-
-        newItem.innerHTML = `
-            <input type="file" name="nouvelles_images" accept="image/*">
-            <input type="text" name="nouvelle_legende_${imageIndex}" placeholder="Légende (optionnelle)">
-            <button type="button" class="btn-small danger" onclick="supprimerNouvelleImage(this)">-</button>
-        `;
-
+        newItem.innerHTML = `<input type="file" name="nouvelles_images" accept="image/*"> <input type="text" name="nouvelle_legende_${imageIndex}" placeholder="Légende (optionnelle)"> <button type="button" class="btn-small danger" onclick="supprimerNouvelleImage(this)">-</button>`;
         container.appendChild(newItem);
         imageIndex++;
-        
-        // Activer le Drag & Drop sur le nouveau champ
         if (typeof enhanceFileUploads === 'function') {
             enhanceFileUploads();
         }
     }
 
     function supprimerNouvelleImage(button) {
-        const item = button.parentElement;
-        item.remove();
+        button.parentElement.remove();
     }
 
     function marquerPourSuppression(imageId) {
-        // Masquer visuellement l'élément
         const imageItem = document.getElementById(`image-item-${imageId}`);
         imageItem.style.opacity = '0.5';
         imageItem.style.position = 'relative';
-
-        // Ajouter un badge "À supprimer"
         const badge = document.createElement('div');
         badge.className = 'delete-badge';
         badge.innerHTML = 'À supprimer';
         imageItem.appendChild(badge);
-
-        // Modifier le bouton pour permettre d'annuler
         const btn = imageItem.querySelector('.delete-image-btn');
         btn.innerHTML = '<i class="fas fa-undo"></i> Annuler';
         btn.classList.remove('danger');
         btn.classList.add('secondary');
         btn.setAttribute('onclick', `annulerSuppression(${imageId})`);
-
-        // Retirer l'image de celles à conserver
         document.getElementById(`keep-image-${imageId}`).name = 'images_supprimees';
     }
 
     function annulerSuppression(imageId) {
-        // Rétablir l'apparence normale
         const imageItem = document.getElementById(`image-item-${imageId}`);
         imageItem.style.opacity = '1';
-
-        // Supprimer le badge
         const badge = imageItem.querySelector('.delete-badge');
         if (badge) {
             badge.remove();
         }
-
-        // Rétablir le bouton de suppression
         const btn = imageItem.querySelector('.delete-image-btn');
         btn.innerHTML = '<i class="fas fa-trash"></i> Supprimer';
         btn.classList.add('danger');
         btn.classList.remove('secondary');
         btn.setAttribute('onclick', `marquerPourSuppression(${imageId})`);
-
-        // Remettre l'image parmi celles à conserver
         document.getElementById(`keep-image-${imageId}`).name = 'garder_image';
     }
 
-    // Gestion des liens dynamiques
     function ajouterChampLien() {
         const container = document.getElementById('liens-container');
         const newItem = document.createElement('div');
         newItem.className = 'lien-upload-item';
         newItem.style.cssText = "display: flex; gap: 10px; margin-bottom: 10px; align-items: center;";
-
-        newItem.innerHTML = `
-            <input type="url" name="liens" placeholder="https://..." style="flex-grow: 1;">
-            <button type="button" class="btn-small danger" onclick="supprimerChampLien(this)">-</button>
-        `;
-
+        newItem.innerHTML = `<input type="url" name="liens" placeholder="https://..." style="flex-grow: 1;"> <button type="button" class="btn-small danger" onclick="supprimerChampLien(this)">-</button>`;
         container.appendChild(newItem);
     }
 
     function supprimerChampLien(button) {
-        const item = button.parentElement;
-        item.remove();
+        button.parentElement.remove();
     }
 
-    // Initialiser les éléments au chargement de la page
     document.addEventListener('DOMContentLoaded', function() {
         const categorieSelect = document.getElementById('categorie');
         const form = document.querySelector('form');
 
-        // Charger les définitions d'attributs
         chargerDefinitionsAttributs();
 
-        // Écouter les changements de catégorie
         categorieSelect.addEventListener('change', function() {
+            toggleAutreCategorie();
             chargerAttributsSpecifiques();
         });
 
-        // Intercepter la soumission du formulaire pour gérer "Autre catégorie"
         form.addEventListener('submit', function(e) {
-            
+            if (categorieSelect.value === 'Autre') {
+                const autreCategorie = document.getElementById('autre-categorie').value.trim();
+                if (autreCategorie) {
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'categorie_personnalisee';
+                    hiddenInput.value = autreCategorie;
+                    form.appendChild(hiddenInput);
+                }
+            }
         });
     });
 </script>

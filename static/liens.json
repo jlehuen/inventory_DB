@@ -15,8 +15,13 @@
         ]
     },
     {
-        "categorie": "Bases de données et catalogues",
+        "categorie": "Bases de données et expos virtuelles",
         "liens": [
+            {
+                "description": "Le site d'un collecteur passionné de l'histoire de l'informatique.",
+                "nom": "Digital Rétro",
+                "url": "https://www.digital-retro.fr/"
+            },
             {
                 "description": "Base de données qui référence plus de 4000 calculatrices",
                 "nom": "Calcuseum",
@@ -29,7 +34,7 @@
         "liens": [
             {
                 "description": "",
-                "nom": "PDP-8 (1965)",
+                "nom": "DEC PDP-8 (1965)",
                 "url": "https://pop.aconit.org/"
             },
             {
@@ -76,6 +81,16 @@
                 "description": "",
                 "nom": "Macintosh (1984)",
                 "url": "https://infinitemac.org/1984/System%201.0"
+            },
+            {
+                "description": "",
+                "nom": "ATARI ST (1985)",
+                "url": "https://estyjs.azurewebsites.net/"
+            },
+            {
+                "description": "",
+                "nom": "NeXT (1989)",
+                "url": "https://infinitemac.org/1996/OPENSTEP%204.0"
             }
         ]
     }

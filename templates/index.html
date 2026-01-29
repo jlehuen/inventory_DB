@@ -3,34 +3,39 @@
 
 {% block content %}
 <!-- Bannière Contribution -->
-<div class="contribution-banner home-banner">
-    <div class="banner-content">
-        <div class="banner-icon composite">
-            <i class="fas fa-hand-holding hand"></i>
-            <i class="fas fa-cube cube"></i>
-        </div>
-        <div class="banner-text">
-            <h3>Vous pouvez contribuer !</h3>
-            <p>Le musée s'enrichit grâce à vos dons. Vous possédez des machines, objets ou ouvrages qui pourraient rejoindre notre collection ?
-                Vous avez des informations ou documents à partager sur un objet présent dans notre catalogue ?
-            </p>
-        </div>
-        <div class="banner-action">
-            <a href="{{ url_for('contribuer') }}" class="btn save">En savoir plus</a>
+<div class="page-banner-container">
+    <div class="contribution-banner home-banner">
+        <div class="banner-content">
+            <div class="banner-icon composite">
+                <i class="fas fa-hand-holding hand"></i>
+                <i class="fas fa-cube cube"></i>
+            </div>
+            <div class="banner-text">
+                <h3>Vous pouvez contribuer !</h3>
+                <p>Le musée s'enrichit grâce à vos dons. Vous possédez des machines, objets ou ouvrages qui pourraient rejoindre notre collection ?
+                    Vous avez des informations ou documents à partager sur un objet présent dans notre catalogue ?
+                    Vous souhaitez transmettre un témoignage ?
+                </p>
+            </div>
+            <div class="banner-action">
+                <a href="{{ url_for('contribuer') }}" class="btn save">En savoir plus</a>
+            </div>
         </div>
     </div>
 </div>
 
-<section class="hero">
-    <div class="hero-content">
-        <h1>Musée Martial Vivet</h1>
-        <p>Catalogue des collections du CCNM</p>
-        <div class="hero-buttons">
-            <a href="{{ url_for('collection') }}" class="btn">Voir la collection</a>
-            <button id="btn-random" class="btn">3 Objets au hasard</button>
+<div class="page-banner-container">
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Musée Martial Vivet</h1>
+            <p>Catalogue des collections du CCNM</p>
+            <div class="hero-buttons">
+                <a href="{{ url_for('collection') }}" class="btn">Voir la collection</a>
+                <button id="btn-random" class="btn">3 Objets au hasard</button>
+            </div>
         </div>
-    </div>
-</section>
+    </section>
+</div>
 
 <section id="objets" class="objets-section">
     <h2 id="section-title">Derniers objets ajoutés</h2>
@@ -40,7 +45,8 @@
         <div class="objet-card">
             <a href="{{ url_for('detail_objet', id=objet['id']) }}">
                 {% if objet['image_principale'] %}
-                <div class="objet-image" style="background-image: url('{{ url_for('static', filename=objet['image_principale']) }}')"></div>
+                <div class="objet-image"
+                    style="background-image: url('{{ url_for('static', filename=objet['image_principale']) }}')"></div>
                 {% else %}
                 <div class="objet-image default-image"></div>
                 {% endif %}
@@ -56,74 +62,104 @@
 </section>
 
 <style>
+
 .hero {
+
     position: relative;
-    padding: 3rem 2rem;
-    margin: -2rem -2rem 2rem -2rem;
+
+    padding: 3rem 0; /* padding vertical conservé */
+
     color: white;
+
     text-align: center;
+
     background-image: url("{{ url_for('static', filename='images/hero-background.jpg') }}");
+
     background-size: 100% auto;
+
     background-position: center;
+
     background-repeat: no-repeat;
-    border-radius: 12px; /* Angles arrondis */
-    overflow: hidden; /* Assure que le dégradé pseudo-élément suit l'arrondi */
+
+    border-radius: 12px;
+
+    overflow: hidden;
+
 }
+
+
 
 .hero::before {
+
     content: '';
+
     position: absolute;
+
     top: 0;
+
     left: 0;
+
     width: 100%;
+
     height: 100%;
+
     background: linear-gradient(135deg,
+
                            rgba(46, 134, 222, 0.85),
+
                            rgba(26, 75, 132, 0.9));
+
     z-index: 1;
+
 }
 
+
+
 .hero-content {
+
     position: relative;
+
     z-index: 2;
-    max-width: 800px;
-    margin: 0 auto;
+
+    margin: 0 auto; /* Permet le centrage horizontal si le contenu est plus étroit */
+
 }
+
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const btnRandom = document.getElementById('btn-random');
-    const objetsGrid = document.getElementById('objets-grid');
-    const sectionTitle = document.getElementById('section-title');
+    document.addEventListener('DOMContentLoaded', function () {
+        const btnRandom = document.getElementById('btn-random');
+        const objetsGrid = document.getElementById('objets-grid');
+        const sectionTitle = document.getElementById('section-title');
 
-    if (btnRandom) {
-        btnRandom.addEventListener('click', function() {
-            // Indiquer le chargement
-            objetsGrid.style.opacity = '0.5';
-            
-            fetch('/random_object_fragment')
-                .then(response => response.text())
-                .then(html => {
-                    // Mettre à jour le titre
-                    sectionTitle.textContent = 'Trois objets de notre collection';
-                    
-                    // Appliquer le centrage
-                    objetsGrid.classList.add('centered');
-                    
-                    // Remplacer le contenu de la grille
-                    objetsGrid.innerHTML = html;
-                    
-                    // Rétablir l'opacité
-                    objetsGrid.style.opacity = '1';
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    objetsGrid.style.opacity = '1';
-                });
-        });
-    }
-});
+        if (btnRandom) {
+            btnRandom.addEventListener('click', function () {
+                // Indiquer le chargement
+                objetsGrid.style.opacity = '0.5';
+
+                fetch('/random_object_fragment')
+                    .then(response => response.text())
+                    .then(html => {
+                        // Mettre à jour le titre
+                        sectionTitle.textContent = 'Trois objets de notre collection';
+
+                        // Appliquer le centrage
+                        objetsGrid.classList.add('centered');
+
+                        // Remplacer le contenu de la grille
+                        objetsGrid.innerHTML = html;
+
+                        // Rétablir l'opacité
+                        objetsGrid.style.opacity = '1';
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        objetsGrid.style.opacity = '1';
+                    });
+            });
+        }
+    });
 </script>
 
 {% endblock %}

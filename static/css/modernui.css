@@ -788,10 +788,11 @@ footer {
     position: relative;
     z-index: 10;
     border-radius: 12px; /* Angles arrondis */
+    margin: 0 0 0 0; /* Marge égale au dessus et en dessous */
 }
 
 .home-banner {
-    margin: -1rem -2rem 4rem -2rem; /* Équilibre l'espace haut (via padding parent) et bas */
+    margin: 0.5rem 0 2rem 0; /* Marge supérieure encore réduite */
 }
 
 .banner-content {
@@ -836,7 +837,7 @@ footer {
 
 .banner-text h3 {
     color: white;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0rem;
     font-size: 1.4rem;
 }
 
