@@ -1,7 +1,7 @@
 {
   "Ordinateurs": {
     "icon": "fa-laptop",
-    "description": "Cette catégorie regroupe des ordinateurs personnels, des stations de travail et des systèmes portables. La collection couvre principalement la période des pionniers de la micro-informatique (années 1970) jusqu'au début des années 2000, illustrant divers aspects de l'histoire des micro-ordinateurs.",
+    "description": "Cette catégorie regroupe des ordinateurs personnels, des stations de travail et des systèmes portables. La collection couvre la période depuis les pionniers de la micro-informatique (années 1970) jusqu'au début des années 2000, illustrant divers aspects de l'histoire des micro-ordinateurs.",
     "attributes": [
       {
         "id": "processeur",

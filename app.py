@@ -484,6 +484,36 @@ def detail_objet(id):
     if objet is None:
         abort(404)
 
+    # Convertir l'objet en dictionnaire modifiable
+    objet_modifiable = dict(objet)
+
+    # Charger les labels à jour depuis categories.json
+    categories_info = get_categories_info()
+    categorie_objet = objet_modifiable.get('categorie')
+    attributs_specifiques_json = objet_modifiable.get('attributs_specifiques')
+
+    if categorie_objet and attributs_specifiques_json and categorie_objet in categories_info:
+        try:
+            # Créer une map des labels actuels pour la catégorie de l'objet
+            label_map = {
+                attr['id']: attr['label']
+                for attr in categories_info[categorie_objet].get('attributes', [])
+            }
+
+            # Parser les attributs stockés dans la base de données
+            attributs_stockes = json.loads(attributs_specifiques_json)
+
+            # Mettre à jour les labels dans les attributs stockés
+            for attr_id, details in attributs_stockes.items():
+                if isinstance(details, dict) and attr_id in label_map:
+                    details['label'] = label_map[attr_id]
+
+            # Remplacer les anciens attributs par les nouveaux
+            objet_modifiable['attributs_specifiques'] = json.dumps(attributs_stockes)
+        except (json.JSONDecodeError, KeyError) as e:
+            app.logger.warning(f"Impossible de mettre à jour les labels pour l'objet {id}: {e}")
+
+
     # Récupérer toutes les images associées à cet objet
     images = conn.execute(
         'SELECT * FROM images WHERE objet_id = ? ORDER BY ordre',
@@ -497,7 +527,7 @@ def detail_objet(id):
     ).fetchall()
 
     conn.close()
-    return render_template('detail.html', objet=objet, images=images, liens=liens)
+    return render_template('detail.html', objet=objet_modifiable, images=images, liens=liens)
 
 @app.route('/recherche')
 def recherche():

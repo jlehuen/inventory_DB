@@ -117,18 +117,17 @@ Ce fichier définit la structure de votre inventaire. Vous pouvez ajouter des ca
   ]
 }
 ```
-*Si vous modifiez des attributs existants, utilisez le script de synchronisation (voir section Maintenance).*
+*Les modifications de `label` dans ce fichier (par exemple, corriger une faute de frappe) sont automatiquement répercutées sur les fiches des objets existants lors de leur affichage.*
 
 ---
 
 ## 🧹 Maintenance et Utilitaires
 
-Le dossier `scripts/` et `utils/` contient des outils essentiels pour la vie du projet :
+Le dossier `scripts/` contient des outils essentiels pour la vie du projet :
 
 | Script | Description | Commande |
 | :--- | :--- | :--- |
 | **backup.command** | Crée une archive complète (Base de données + Images) dans le dossier `backups/`. | `./backup.command` |
-| **sync_categories.py** | À lancer après avoir modifié `categories.json`. Met à jour les objets existants en base pour refléter la nouvelle structure JSON. | `python utils/sync_categories.py` |
 | **clean_images.py** | Analyse le dossier d'upload et supprime les images qui ne sont plus liées à aucun objet (nettoyage orphelins). | `python scripts/clean_images.py` |
 | **resize_existing...** | Redimensionne et optimise les images qui auraient été uploadées manuellement sans passer par l'interface. | `python scripts/resize_existing_images.py` |
 
