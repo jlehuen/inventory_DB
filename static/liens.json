@@ -1,7 +1,12 @@
 [
     {
-        "categorie": "Patrimoine numérique",
+        "categorie": "Organisations et associations",
         "liens": [
+            {
+                "description": "Projet pour un Musée de l'Informatique et du Numérique de France",
+                "nom": "Projet #MINF",
+                "url": "https://museeinfo.cnam.fr/"
+            },
             {
                 "description": "Une des plus importantes collections du patrimoine numérique et vidéoludique.",
                 "nom": "Association MO5",
@@ -26,6 +31,11 @@
                 "description": "Base de données qui référence plus de 4000 calculatrices",
                 "nom": "Calcuseum",
                 "url": "http://www.calcuseum.com/"
+            },
+            {
+                "description": "Décrit les calculatrices Hewlett-Packard commercialisées entre 1968 et 1986.",
+                "nom": "Museum of HP Calculators",
+                "url": "https://www.hpmuseum.org/"
             }
         ]
     },
