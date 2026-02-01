@@ -1074,9 +1074,19 @@ def ajouter_objet():
                                           'attributs_specifiques': attributs_json
                                       })
 
-    # Générer le prochain numéro d'inventaire disponible pour le formulaire vide
+    # Traitement du GET : pré-remplir le formulaire
+    # Générer le prochain numéro d'inventaire disponible
     prochain_numero = generer_numero_inventaire(get_db_connection)
-    return render_template('admin/ajouter.html', objet={'numero_inventaire': prochain_numero})
+    
+    # Créer un objet initial avec le numéro d'inventaire
+    objet_initial = {'numero_inventaire': prochain_numero}
+    
+    # Pré-remplir la catégorie si elle est passée en paramètre
+    categorie_preselectionnee = request.args.get('category')
+    if categorie_preselectionnee:
+        objet_initial['categorie'] = categorie_preselectionnee
+        
+    return render_template('admin/ajouter.html', objet=objet_initial)
 
 @app.route('/admin/modifier/<int:id>', methods=('GET', 'POST'))
 @login_required

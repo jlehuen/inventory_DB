@@ -7,7 +7,12 @@
 <section class="categorie-objets">
     <div class="categorie-header">
         <h1>{{ categorie }}</h1>
-        <a href="{{ url_for('categories') }}" class="btn"><i class="fas fa-arrow-left"></i> Retour aux catégories</a>
+        <div>
+            <a href="{{ url_for('categories') }}" class="btn"><i class="fas fa-arrow-left"></i> Retour aux catégories</a>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('ajouter_objet', category=categorie) }}" class="btn btn-primary" style="margin-left: 1rem;"><i class="fas fa-plus"></i> Ajouter un objet</a>
+            {% endif %}
+        </div>
     </div>
 
     {% if description %}
