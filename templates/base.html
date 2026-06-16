@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Catalogue des collections du CCNM{% endblock %}</title>
+    <title>{% block title %}Musée Martial Vivet - Accueil{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,8 +15,8 @@
         <div class="header-top">
             <div class="logo">
                 <a href="{{ url_for('admin') if current_user.is_authenticated else url_for('index') }}">
-                    <h1>Centre Culturel sur le Numérique du Mans (CCNM)</h1>
-                    <p>Catalogue de la collection de micro-ordinateurs et de dispositifs numériques</p>
+                    <h1>Musée de l'informatique Martial Vivet</h1>
+                    <p>Inventaire de la collection de micro-ordinateurs et de dispositifs numériques</p>
                 </a>
             </div>
             <div class="header-logo">
@@ -30,11 +30,13 @@
                 <li><a href="{{ url_for('admin') if current_user.is_authenticated else url_for('index') }}">Accueil</a></li>
                 <li><a href="{{ url_for('categories') }}">Catégories</a></li>
                 <li><a href="{{ url_for('collection') }}">Collection</a></li>
-                <li><a href="{{ url_for('liens') }}">Liens</a></li>
+                <li><a href="{{ url_for('timeline') }}">Timeline</a></li>
+                <li><a href="{{ url_for('liens') }}">Ressources</a></li>
+                <li><a href="{{ url_for('martial_vivet') }}">Martial Vivet</a></li>
                 <li>
                     <form action="{{ url_for('recherche') }}" method="get" class="search-form">
                         <input type="text" name="q" placeholder="Rechercher...">
-                        <button type-="submit"><i class="fas fa-search"></i></button>
+                        <button type="submit"><i class="fas fa-search"></i></button>
                     </form>
                 </li>
                 <li class="auth-status">
@@ -70,7 +72,6 @@
                 <p>Ce site présente la collection d’ordinateurs, de dispositifs numériques et d’ouvrages consacrés à l’informatique du Musée Martial Vivet.
                 Cette collection est conservée et exposée au sein de l’Institut d’Informatique Claude Chappe (IC2) à l’Université du Mans.
                 Elle est mise en valeur au travers d'évènements et de visites organisées par l’Institut d’Informatique Claude Chappe.</p>
-                <p class="mt-small"><a href="{{ url_for('martial_vivet') }}" class="footer-link-highlight">Qui était Martial Vivet ?</a></p>
             </div>
             <div class="footer-section">
                 <h3>Contacts</h3>
@@ -81,12 +82,14 @@
             </div>
         </div>
         <div class="copyright">
-            <p>&copy; 2026 Le Mans Université. Tous droits réservés.</p>
+            <p>&copy; 2026 Le Mans Université. Tous droits réservés<br>Conception et développement : Jérôme Lehuen</p>
+            
         </div>
     </footer>
 
     <script src="{{ url_for('static', filename='js/icon-enhancer.js') }}"></script>
     <script src="{{ url_for('static', filename='js/form-enhancer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/preview-enhancer.js') }}"></script>
 
 </body>
 </html>

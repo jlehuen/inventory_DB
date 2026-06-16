@@ -1,8 +1,0 @@
-2026-02-01 13:57:23,117 INFO: Compteur de tentatives réinitialisé pour admin après connexion réussie [in /Users/lehuen/dev/inventaire_CCNM/scripts/login_security.py:208]
-2026-02-01 13:57:23,119 INFO: Connexion réussie pour admin [in /Users/lehuen/dev/inventaire_CCNM/app.py:386]
-2026-02-01 17:44:17,118 INFO: Application démarrée [in /Users/lehuen/dev/inventaire_CCNM/app.py:1578]
-2026-02-01 17:44:17,346 INFO: Application démarrée [in /Users/lehuen/dev/inventaire_CCNM/app.py:1578]
-2026-02-01 17:48:02,605 INFO: Application démarrée [in /Users/lehuen/dev/inventaire_CCNM/app.py:1588]
-2026-02-01 17:48:49,204 INFO: Déconnexion pour admin [in /Users/lehuen/dev/inventaire_CCNM/app.py:414]
-2026-02-01 17:48:57,604 INFO: Compteur de tentatives réinitialisé pour admin après connexion réussie [in /Users/lehuen/dev/inventaire_CCNM/scripts/login_security.py:208]
-2026-02-01 17:48:57,605 INFO: Connexion réussie pour admin [in /Users/lehuen/dev/inventaire_CCNM/app.py:386]

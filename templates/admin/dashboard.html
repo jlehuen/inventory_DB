@@ -1,7 +1,7 @@
 {# templates/admin/dashboard.html - Tableau de bord principal de l'administration #}
 {% extends 'base.html' %}
 
-{% block title %}Tableau de bord - Administration{% endblock %}
+{% block title %}Musée Martial Vivet - Administration{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
@@ -268,11 +268,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const ctxCat = document.getElementById('categoriesChart').getContext('2d');
     
-    // Couleurs douces pour le graphique
-    const colors = [
-        '#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', 
-        '#34495e', '#1abc9c', '#e67e22', '#95a5a6'
-    ];
+    // Mapping des couleurs par catégorie pour plus de cohérence
+    const categoryColorMap = {
+        'Ordinateurs': '#e74c3c',    // Rouge
+        'Calculatrices': '#3498db',  // Bleu
+		'Consoles de jeu': '#00dddd',// Cyan
+        'Périphériques': '#e67e22',  // Orange
+        'Stockages': '#2ecc71',      // Vert
+        'Livres': '#9b59b6',         // Violet
+        'Logiciels': '#fd79a8',      // Rose
+        'Divers': '#f1c40f'          // Jaune
+    };
+
+    const colors = categoriesData.map(d => categoryColorMap[d.label] || '#bdc3c7');
 
     new Chart(ctxCat, {
         type: 'doughnut',

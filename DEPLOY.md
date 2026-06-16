@@ -71,11 +71,15 @@ C'est une étape **critique**. L'application utilise SQLite (fichier `.db`) et p
 mkdir -p database/uploads
 mkdir -p logs
 
-# Donner la propriété à www-data
-sudo chown -R www-data:www-data /var/www/inventaire_ccnm
+# Donner la propriété à www-data pour l'exécution, mais garder les droits pour le déploiement
+# Une solution propre est d'ajouter l'utilisateur collection au groupe www-data
+sudo usermod -a -G www-data collection
+
+# Appliquer les permissions
+sudo chown -R collection:www-data /var/www/inventaire_ccnm
 sudo chmod -R 775 /var/www/inventaire_ccnm/database
 sudo chmod -R 775 /var/www/inventaire_ccnm/logs
-```
+``````
 
 ## 5. Configuration de Gunicorn (Service Systemd)
 
@@ -214,4 +218,6 @@ Exemple de script de backup simple :
 #!/bin/bash
 DATE=$(date +%Y-%m-%d)
 tar -czf /backups/inventaire_backup_$DATE.tar.gz /var/www/inventaire_ccnm/database
+```
+z /var/www/inventaire_ccnm/database
 ```

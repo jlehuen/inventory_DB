@@ -28,7 +28,7 @@
     <section class="hero">
         <div class="hero-content">
             <h1>Musée Martial Vivet</h1>
-            <p>Catalogue des collections du CCNM</p>
+            <p>Inventaire de la collection</p>
             <div class="hero-buttons">
                 <a href="{{ url_for('collection') }}" class="btn">Voir la collection</a>
                 <button id="btn-random" class="btn">3 Objets au hasard</button>
@@ -53,7 +53,7 @@
                 <div class="objet-info">
                     <h3>{{ objet['nom'] }}</h3>
                     <p class="objet-categorie">{{ objet['categorie'] }}</p>
-                    <p class="objet-fabricant">{{ objet['fabricant'] }}</p>
+                    <p class="objet-fabricant">{{ objet['fabricant'] }}{% if objet['date_fabrication'] %} ({{ objet['date_fabrication'] }}){% endif %}</p>
                 </div>
             </a>
         </div>

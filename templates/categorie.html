@@ -1,7 +1,7 @@
 {# templates/categorie.html - Affichage des objets d'une catégorie spécifique #}
 {% extends 'base.html' %}
 
-{% block title %}{{ categorie }} - Catalogue d'Instruments{% endblock %}
+{% block title %}Musée Martial Vivet - {{ categorie }}{% endblock %}
 
 {% block content %}
 <section class="categorie-objets">
@@ -42,7 +42,7 @@
                 {% endif %}
                 <div class="objet-info">
                     <h3>{{ objet['nom'] }}</h3>
-                    <p class="objet-fabricant">{{ objet['fabricant'] }}</p>
+                    <p class="objet-fabricant">{{ objet['fabricant'] }}{% if objet['date_fabrication'] %} ({{ objet['date_fabrication'] }}){% endif %}</p>
                 </div>
             </a>
         </div>

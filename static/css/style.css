@@ -445,6 +445,10 @@ main.wide-container {
     word-break: break-word; /* Césure des mots longs */
 }
 
+.pre-line {
+    white-space: pre-line;
+}
+
 .info-table th {
     width: 40%;
     color: #666;
@@ -1072,3 +1076,82 @@ footer {
         height: 250px; 
         width: 100%;
     }
+
+/* --- Quick Look Preview --- */
+.quick-preview-container {
+    position: fixed;
+    z-index: 9999;
+    width: 300px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s;
+    overflow: hidden;
+    border: 1px solid #eee;
+}
+
+.quick-preview-container.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.preview-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-image {
+    width: 100%;
+    height: 150px;
+    background-size: cover;
+    background-position: center;
+}
+
+.preview-image.default-image {
+    background-color: #f1f2f6;
+    background-image: url('../images/logo-univ.png');
+    background-size: 50%;
+    background-repeat: no-repeat;
+    opacity: 0.3;
+}
+
+.preview-content {
+    padding: 15px;
+}
+
+.preview-content h4 {
+    margin: 0 0 10px 0;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
+.preview-meta {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+    font-size: 0.8rem;
+    color: #636e72;
+}
+
+.preview-desc {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: #2d3436;
+    margin-bottom: 10px;
+}
+
+.preview-status {
+    font-size: 0.8rem;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+.preview-loading {
+    padding: 20px;
+    text-align: center;
+    color: #b2bec3;
+}
+

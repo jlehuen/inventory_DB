@@ -316,6 +316,10 @@ select:focus {
     border-bottom: 1px solid #eee;
 }
 
+.pre-line {
+    white-space: pre-line;
+}
+
 .info-table th {
     color: var(--primary-color);
     width: 35%;
@@ -345,6 +349,7 @@ select:focus {
 .admin-table td {
     padding: 1rem;
     border-bottom: 1px solid #eee;
+    white-space: pre-line;
 }
 
 .admin-table tr:hover {

@@ -14,6 +14,7 @@ import re
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from PIL import Image
+from deep_translator import GoogleTranslator
 
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, send_file, send_from_directory, jsonify, Response, stream_with_context
 from werkzeug.utils import secure_filename
@@ -442,7 +443,7 @@ def random_object_fragment():
                 <div class="objet-info">
                     <h3>{objet['nom']}</h3>
                     <p class="objet-categorie">{objet['categorie']}</p>
-                    <p class="objet-fabricant">{objet['fabricant']}</p>
+                    <p class="objet-fabricant">{objet['fabricant']}{f" ({objet['date_fabrication']})" if objet['date_fabrication'] else ""}</p>
                 </div>
             </a>
         </div>
@@ -473,6 +474,25 @@ def martial_vivet():
 def serve_upload(filename):
     """Sert les fichiers uploadés (images) depuis le dossier sécurisé."""
     return send_from_directory('database/uploads', filename)
+
+@app.route('/api/objet_preview/<int:id>')
+def objet_preview(id):
+    """Retourne un fragment HTML léger pour la prévisualisation au survol."""
+    conn = get_db_connection()
+    objet = conn.execute('SELECT * FROM objets WHERE id = ?', (id,)).fetchone()
+    conn.close()
+
+    if not objet:
+        return '', 404
+
+    image_url = url_for('static', filename=objet['image_principale']) if objet['image_principale'] else None
+    
+    # Tronquer la description
+    description = objet['description'] or ""
+    if len(description) > 150:
+        description = description[:147] + "..."
+
+    return render_template('partials/objet_preview.html', objet=objet, image_url=image_url, description=description)
 
 @app.route('/objet/<int:id>')
 def detail_objet(id):
@@ -684,9 +704,68 @@ def collection():
         FROM objets
         ORDER BY nom ASC
     ''').fetchall()
-    conn.close()
-    return render_template('collection.html', objets=objets)
 
+    # Stats par année pour le graphique
+    stats_annees = conn.execute('''
+        SELECT SUBSTR(date_fabrication, 1, 4) as annee, COUNT(*) as count
+        FROM objets
+        WHERE date_fabrication IS NOT NULL AND date_fabrication != ''
+        GROUP BY annee
+        ORDER BY annee ASC
+    ''').fetchall()
+
+    # Stats par catégorie pour le graphique
+    stats_categories = conn.execute('''
+        SELECT categorie, COUNT(*) as count 
+        FROM objets 
+        GROUP BY categorie 
+        ORDER BY categorie ASC
+    ''').fetchall()
+
+    conn.close()
+    return render_template('collection.html', objets=objets, stats_annees=stats_annees, stats_categories=stats_categories)
+
+
+@app.route('/timeline')
+def timeline():
+    """Affiche une frise chronologique de la collection avec filtrage multi-catégories."""
+    categories_filter = request.args.getlist('categories')
+    
+    conn = get_db_connection()
+    
+    query = '''
+        SELECT id, nom, categorie, fabricant, date_fabrication, image_principale, description
+        FROM objets 
+        WHERE date_fabrication IS NOT NULL AND date_fabrication != ''
+    '''
+    params = []
+    
+    if categories_filter:
+        placeholders = ', '.join(['?'] * len(categories_filter))
+        query += f' AND categorie IN ({placeholders})'
+        params.extend(categories_filter)
+        
+    query += ' ORDER BY date_fabrication ASC, nom ASC'
+    
+    objets = conn.execute(query, params).fetchall()
+    conn.close()
+    
+    # Organiser les objets par année pour faciliter l'affichage
+    timeline_data = {}
+    for objet in objets:
+        # Extraire l'année (on suppose les 4 premiers caractères)
+        annee = objet['date_fabrication'][:4]
+        if annee not in timeline_data:
+            timeline_data[annee] = []
+        timeline_data[annee].append(objet)
+        
+    # Récupérer la liste des catégories pour les filtres
+    categories = get_categories_info()
+        
+    return render_template('timeline.html', 
+                           timeline_data=timeline_data, 
+                           categories=categories, 
+                           active_categories=categories_filter)
 
 @app.route('/liens')
 def liens():
@@ -885,7 +964,7 @@ def admin():
         SELECT categorie, COUNT(*) as count 
         FROM objets 
         GROUP BY categorie 
-        ORDER BY count DESC
+        ORDER BY categorie ASC
     ''').fetchall()
     
     # 3. Stats par état (pour le suivi sanitaire)
@@ -930,6 +1009,7 @@ def ajouter_objet():
     if request.method == 'POST':
         nom = request.form['nom']
         description = request.form['description']
+        description_en = request.form.get('description_en', '')
 
         # Gestion de la catégorie personnalisée
         if 'categorie_personnalisee' in request.form and request.form['categorie_personnalisee'].strip():
@@ -985,6 +1065,7 @@ def ajouter_objet():
                                                                         objet={
                                                                         'nom': nom,
                                                                         'description': description,
+                                                                        'description_en': description_en,
                                                                         'categorie': categorie,
                                                                         'fabricant': fabricant,
                                                                         'date_fabrication': date_fabrication,
@@ -1007,8 +1088,8 @@ def ajouter_objet():
             try:
                 # Insérer les informations de l'objet (sans l'URL dans la table principale)
                 cursor = conn.execute(
-                    'INSERT INTO objets (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale, date_ajout, attributs_specifiques, origine) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), attributs_json, origine)
+                    'INSERT INTO objets (nom, description, description_en, categorie, fabricant, date_fabrication, numero_inventaire, image_principale, date_ajout, attributs_specifiques, origine) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    (nom, description, description_en, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), attributs_json, origine)
                 )
 
                 objet_id = cursor.lastrowid
@@ -1107,6 +1188,7 @@ def modifier_objet(id):
     if request.method == 'POST':
         nom = request.form['nom']
         description = request.form['description']
+        description_en = request.form.get('description_en', '')
 
         # Gestion de la catégorie personnalisée
         if 'categorie_personnalisee' in request.form and request.form['categorie_personnalisee'].strip():
@@ -1167,6 +1249,7 @@ def modifier_objet(id):
             modified_objet.update({
                 'nom': nom,
                 'description': description,
+                'description_en': description_en,
                 'categorie': categorie,
                 'fabricant': fabricant,
                 'date_fabrication': date_fabrication,
@@ -1191,8 +1274,8 @@ def modifier_objet(id):
             current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             cursor = conn.execute(
-                'UPDATE objets SET nom = ?, description = ?, categorie = ?, fabricant = ?, date_fabrication = ?, numero_inventaire = ?, image_principale = ?, attributs_specifiques = ?, etat = ?, origine = ?, date_modification = ?, version = version + 1 WHERE id = ? AND version = ?',
-                (nom, description, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, attributs_json, etat, origine, current_datetime, id, version_soumise)
+                'UPDATE objets SET nom = ?, description = ?, description_en = ?, categorie = ?, fabricant = ?, date_fabrication = ?, numero_inventaire = ?, image_principale = ?, attributs_specifiques = ?, etat = ?, origine = ?, date_modification = ?, version = version + 1 WHERE id = ? AND version = ?',
+                (nom, description, description_en, categorie, fabricant, date_fabrication, numero_inventaire, image_principale_path, attributs_json, etat, origine, current_datetime, id, version_soumise)
             )
             
             if cursor.rowcount == 0:
@@ -1380,6 +1463,7 @@ def export_csv():
 def generate_pdf(id):
     """Génère et sert le fichier PDF de la fiche de l'objet."""
     conn = get_db_connection()
+    lang = request.args.get('lang', 'fr')
 
     # Récupérer les informations de l'objet
     objet = conn.execute('SELECT * FROM objets WHERE id = ?', (id,)).fetchone()
@@ -1402,13 +1486,13 @@ def generate_pdf(id):
 
     # Générer le PDF
     base_url = request.url_root
-    pdf_buffer = pdf_generator.generate_object_pdf(objet, images, liens, base_url)
+    pdf_buffer = pdf_generator.generate_object_pdf(objet, images, liens, base_url, lang=lang)
 
     # Renvoyer le PDF comme fichier téléchargeable
     return send_file(
         pdf_buffer,
         as_attachment=True,
-        download_name=f"{objet['nom']}-fiche.pdf",
+        download_name=f"{objet['nom']}-fiche-{lang}.pdf",
         mimetype='application/pdf'
     )
 
@@ -1417,6 +1501,8 @@ def generate_pdf(id):
 def generate_cartel(id):
     """Génère et sert le cartel (étiquette) de l'objet au format PDF."""
     conn = get_db_connection()
+    lang = request.args.get('lang', 'fr')
+    
     objet = conn.execute('SELECT * FROM objets WHERE id = ?', (id,)).fetchone()
     conn.close()
 
@@ -1425,12 +1511,34 @@ def generate_cartel(id):
 
     # Générer le PDF du cartel
     base_url = request.url_root
-    pdf_buffer = pdf_generator.generate_cartel_pdf(objet, base_url)
+    pdf_buffer = pdf_generator.generate_cartel_pdf(objet, base_url, lang=lang)
 
     return send_file(
         pdf_buffer,
         as_attachment=True,
-        download_name=f"Cartel-{objet['nom']}.pdf",
+        download_name=f"Cartel-{objet['nom']}-{lang}.pdf",
+        mimetype='application/pdf'
+    )
+
+@app.route('/objet/<int:id>/qr_label')
+@login_required
+def generate_qr_label(id):
+    """Génère et sert l'étiquette QR seule de l'objet au format PDF."""
+    conn = get_db_connection()
+    objet = conn.execute('SELECT * FROM objets WHERE id = ?', (id,)).fetchone()
+    conn.close()
+
+    if objet is None:
+        abort(404)
+
+    # Générer le PDF de l'étiquette QR
+    base_url = request.url_root
+    pdf_buffer = pdf_generator.generate_qr_only_pdf(objet, base_url)
+
+    return send_file(
+        pdf_buffer,
+        as_attachment=True,
+        download_name=f"QR-{objet['numero_inventaire']}.pdf",
         mimetype='application/pdf'
     )
 
@@ -1546,6 +1654,25 @@ def admin_post_nettoyage():
     # Rediriger vers la page d'administration
     return redirect(url_for('admin'))
 
+@app.route('/admin/translate', methods=['POST'])
+@login_required
+def admin_translate():
+    """Traduit un texte de la source vers l'anglais via un service externe."""
+    try:
+        data = request.get_json()
+        text = data.get('text', '')
+        
+        if not text:
+            return jsonify({'error': 'Aucun texte à traduire'}), 400
+            
+        # Utilisation de deep-translator (Google Translator gratuit)
+        translated = GoogleTranslator(source='fr', target='en').translate(text)
+        
+        return jsonify({'translated_text': translated})
+    except Exception as e:
+        app.logger.error(f"Erreur de traduction: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 # Ajout d'entêtes de sécurité
 @app.after_request
 def add_security_headers(response):
@@ -1556,8 +1683,6 @@ def add_security_headers(response):
     response.headers['X-XSS-Protection'] = '1; mode=block'
     # Empêche le navigateur de deviner le type MIME
     response.headers['X-Content-Type-Options'] = 'nosniff'
-    # Politique de sécurité du contenu (CSP) - version plus permissive pour le développement
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://cdnjs.cloudflare.com data:;"
     # Référant
     response.headers['Referrer-Policy'] = 'same-origin'
     return response

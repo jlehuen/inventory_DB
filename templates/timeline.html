@@ -1,0 +1,457 @@
+{# templates/timeline.html - Frise chronologique HORIZONTALE de la collection #}
+{% extends 'base.html' %}
+
+{% block title %}Musée Martial Vivet - Frise chronologique{% endblock %}
+
+{% block content %}
+<section class="timeline-section horizontal">
+    <div class="section-header">
+        <h1>Frise chronologique (timeline)</h1>
+        <p>Explorez l'évolution des ordinateurs et dispositifs numériques au fil des années</p>
+    </div>
+    <form id="filter-form" action="{{ url_for('timeline') }}" method="get" class="timeline-filters-form">
+        <div class="timeline-filters">
+            <div class="filter-checkbox-group">
+                {% for cat_name, cat_info in categories.items() %}
+                <label class="filter-checkbox-card {% if cat_name in active_categories %}active{% endif %}">
+                    <input type="checkbox" name="categories" value="{{ cat_name }}" 
+                           {% if cat_name in active_categories %}checked{% endif %}
+                           onchange="document.getElementById('filter-form').submit()">
+                    <div class="checkbox-content">
+                        <i class="fas {{ cat_info.icon }}"></i>
+                        <span>{{ cat_name }}</span>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+            {% if active_categories %}
+            <a href="{{ url_for('timeline') }}" class="clear-filters">
+                <i class="fas fa-times"></i> Réinitialiser
+            </a>
+            {% endif %}
+        </div>
+    </form>
+
+    {% if timeline_data %}
+    <div class="timeline-container-relative">
+        <button class="timeline-nav-btn prev" aria-label="Précédent">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        
+        <div class="timeline-wrapper">
+            <div class="timeline-horizontal">
+                <!-- La ligne est maintenant un enfant direct pour un positionnement absolu stable -->
+                <div class="timeline-main-line"></div>
+                
+                {% for annee, objets in timeline_data.items() %}
+                <div class="timeline-year-block">
+                    <div class="timeline-items-container">
+                        {% for objet in objets %}
+                        <div class="timeline-card-wrapper">
+                            <a href="{{ url_for('detail_objet', id=objet['id']) }}" class="timeline-card">
+                                {% if objet['image_principale'] %}
+                                <div class="card-image">
+                                    <img src="{{ url_for('static', filename=objet['image_principale']) }}" alt="{{ objet['nom'] }}">
+                                </div>
+                                {% else %}
+                                <div class="card-image default">
+                                    <i class="fas fa-microscope"></i>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="card-body">
+                                    <span class="card-date">{{ objet['date_fabrication']|replace('\\n', '\n') }}</span>
+                                    <h4>{{ (objet['nom']|truncate(40))|replace('\\n', '\n') }}</h4>
+                                    <p class="card-cat">{{ objet['categorie'] }}</p>
+                                </div>
+                            </a>
+                            <!-- Le nœud est positionné par rapport au bas du wrapper qui est sur la ligne -->
+                            <div class="timeline-node"></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="timeline-year-label">{{ annee }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <button class="timeline-nav-btn next" aria-label="Suivant">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+    <div class="timeline-hint">
+        <i class="fas fa-arrows-left-right"></i> Faites défiler horizontalement ou utilisez les flèches pour naviguer dans le temps
+    </div>
+    {% else %}
+    <div class="no-results">
+        <p>Aucun objet avec une date de fabrication n'a été trouvé.</p>
+    </div>
+    {% endif %}
+</section>
+
+<style>
+:root {
+    --timeline-line-pos: 100px; /* Position de la ligne depuis le bas du conteneur */
+    --node-size: 20px;
+    --shadow-deep: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.timeline-filters {
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.filter-checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.8rem;
+}
+
+.filter-checkbox-card {
+    position: relative;
+    cursor: pointer;
+}
+
+.filter-checkbox-card input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkbox-content {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 1.2rem;
+    background: #f1f2f6;
+    color: #2d3436;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    box-shadow: var(--shadow-sm);
+}
+
+.filter-checkbox-card:hover .checkbox-content {
+    background: #dfe6e9;
+    transform: translateY(-2px);
+}
+
+.filter-checkbox-card input[type="checkbox"]:checked + .checkbox-content {
+    background: white;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.15);
+}
+
+.filter-checkbox-card.active .checkbox-content {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.checkbox-content i {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+.clear-filters {
+    font-size: 0.85rem;
+    color: #636e72;
+    text-decoration: none;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    background: #f1f2f6;
+}
+
+.clear-filters:hover {
+    color: #d63031;
+    background: #fab1a0;
+}
+
+.timeline-section.horizontal {
+    padding: 2rem 0;
+    background: transparent;
+}
+
+.timeline-container-relative {
+    position: relative;
+    width: 100%;
+}
+
+.timeline-nav-btn {
+    position: absolute;
+    top: 160px;
+    width: 50px;
+    height: 50px;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    z-index: 100;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    transition: all 0.3s ease;
+    opacity: 0.7; /* Visible par défaut */
+}
+
+.timeline-nav-btn:hover {
+    opacity: 1 !important;
+    background: var(--primary-color);
+    color: white;
+    transform: scale(1.1);
+}
+
+.timeline-nav-btn.prev {
+    left: 20px;
+}
+
+.timeline-nav-btn.next {
+    right: 20px;
+}
+
+.timeline-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    padding: 1rem 0;
+    scrollbar-width: thin;
+    cursor: grab;
+}
+
+.timeline-horizontal {
+    display: flex;
+    position: relative;
+    min-width: max-content;
+    height: 420px; /* Réduit de 500px pour resserrer l'espace en haut */
+    padding: 0 4rem;
+}
+
+.timeline-main-line {
+    position: absolute;
+    bottom: var(--timeline-line-pos);
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+    border-radius: 3px;
+    z-index: 1;
+}
+
+.timeline-year-block {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    border-left: 1px dashed #e0e0e0;
+    padding: 0 2rem;
+}
+
+.timeline-year-block:first-child {
+    border-left: none;
+}
+
+.timeline-items-container {
+    display: flex;
+    align-items: flex-end; /* Toutes les cartes s'alignent sur la même base */
+    gap: 2rem;
+    height: calc(100% - var(--timeline-line-pos));
+    padding-bottom: 0;
+    margin-bottom: var(--timeline-line-pos); /* On s'arrête exactement sur la ligne */
+}
+
+.timeline-card-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* La base de ce div est exactement sur la ligne bleue */
+}
+
+.timeline-card {
+    width: 200px;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-deep);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    margin-bottom: 40px; /* Distance fixe entre la carte et la ligne */
+    border: 1px solid rgba(0,0,0,0.05);
+    z-index: 10;
+}
+
+.timeline-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+
+.card-image {
+    width: 100%;
+    height: 150px;
+}
+
+.card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-body {
+    padding: 0.8rem;
+}
+
+.card-body h4 {
+    font-size: 0.85rem;
+    margin: 5px 0;
+}
+
+/* LE CERCLE : Positionné exactement sur la ligne */
+.timeline-node {
+    position: absolute;
+    bottom: calc(var(--node-size) / -2 + 3px); /* Redescendu de 2px (était +5px, maintenant +3px) */
+    transform: translateX(1px); /* Décalage de 1px vers la droite */
+    width: var(--node-size);
+    height: var(--node-size);
+    background: white;
+    border: 4px solid var(--primary-color);
+    border-radius: 50%;
+    z-index: 5;
+    box-shadow: 0 0 0 4px white;
+}
+
+/* LE SEGMENT : Relie le bas de la carte à la ligne */
+.timeline-card-wrapper::after {
+    content: '';
+    position: absolute;
+    bottom: 0; /* Part de la ligne */
+    left: 50%;
+    width: 2px;
+    height: 40px; /* Hauteur correspondant au margin-bottom de la carte */
+    background: var(--primary-color);
+    opacity: 0.3;
+    z-index: 0;
+}
+
+/* L'ANNÉE : Placée sous la ligne */
+.timeline-year-label {
+    position: absolute;
+    bottom: 20px; /* 80px sous la ligne (100 - 80) */
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--primary-color);
+    opacity: 0.8;
+    letter-spacing: 2px;
+    z-index: 0;
+    text-shadow: 1px 1px 0px white;
+}
+
+.timeline-hint {
+    text-align: center;
+    padding: 1rem;
+    color: #b2bec3;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .timeline-horizontal {
+        height: 450px;
+    }
+    .timeline-card {
+        width: 150px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const wrapper = document.querySelector('.timeline-wrapper');
+    if (!wrapper) return;
+
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    wrapper.addEventListener('mousedown', (e) => {
+        isDown = true;
+        startX = e.pageX - wrapper.offsetLeft;
+        scrollLeft = wrapper.scrollLeft;
+        wrapper.style.cursor = 'grabbing';
+    });
+
+    wrapper.addEventListener('mouseleave', () => {
+        isDown = false;
+        wrapper.style.cursor = 'grab';
+    });
+
+    wrapper.addEventListener('mouseup', () => {
+        isDown = false;
+        wrapper.style.cursor = 'grab';
+    });
+
+    wrapper.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - wrapper.offsetLeft;
+        const walk = (x - startX) * 2;
+        wrapper.scrollLeft = scrollLeft - walk;
+    });
+
+    // Navigation par boutons
+    const nextBtn = document.querySelector('.timeline-nav-btn.next');
+    const prevBtn = document.querySelector('.timeline-nav-btn.prev');
+    const scrollAmount = 400;
+
+    if (nextBtn && prevBtn) {
+        nextBtn.addEventListener('click', () => {
+            wrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        });
+
+        prevBtn.addEventListener('click', () => {
+            wrapper.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        });
+        
+        const updateButtons = () => {
+            // Visibilité du bouton Précédent
+            if (wrapper.scrollLeft <= 5) {
+                prevBtn.style.visibility = 'hidden';
+                prevBtn.style.opacity = '0';
+            } else {
+                prevBtn.style.visibility = 'visible';
+                prevBtn.style.opacity = '0.7';
+            }
+
+            // Visibilité du bouton Suivant
+            const isAtEnd = wrapper.scrollLeft + wrapper.clientWidth >= wrapper.scrollWidth - 5;
+            if (isAtEnd) {
+                nextBtn.style.visibility = 'hidden';
+                nextBtn.style.opacity = '0';
+            } else {
+                nextBtn.style.visibility = 'visible';
+                nextBtn.style.opacity = '0.7';
+            }
+        };
+        
+        wrapper.addEventListener('scroll', updateButtons);
+        window.addEventListener('resize', updateButtons);
+        // Initialiser l'état des boutons
+        setTimeout(updateButtons, 100);
+    }
+});
+</script>
+{% endblock %}

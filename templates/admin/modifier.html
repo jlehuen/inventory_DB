@@ -2,7 +2,7 @@
 {# templates/admin/modifier.html - Formulaire d'édition d'un objet existant #}
 {% extends 'base.html' %}
 
-{% block title %}Modifier un objet - Gestion de la collection{% endblock %}
+{% block title %}Musée Martial Vivet - Modifier un objet{% endblock %}
 
 {% block content %}
 <section class="admin-form-section">
@@ -11,6 +11,10 @@
         <div class="view-actions">
             <a href="{{ url_for('collection') }}" class="btn secondary">Annuler</a>
             <button type="button" class="btn save" onclick="document.querySelector('.admin-form').submit();">Enregistrer</button>
+            <form action="{{ url_for('supprimer_objet', id=objet['id']) }}" method="post" class="inline-form" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet objet ?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn danger">Supprimer la fiche</button>
+            </form>
         </div>
     </div>
 
@@ -23,8 +27,18 @@
         </div>
 
         <div class="form-group">
-            <label for="description">Description</label>
-            <textarea id="description" name="description" rows="5">{{ objet['description'] }}</textarea>
+            <label for="description">Description (Français)</label>
+            <div style="display: flex; gap: 10px; flex-direction: column;">
+                <textarea id="description" name="description" rows="5">{{ objet['description'] }}</textarea>
+                <button type="button" class="btn secondary" id="btn-translate" style="align-self: flex-start; font-size: 0.8rem; padding: 5px 10px;">
+                    <i class="fas fa-language"></i> Traduire en anglais
+                </button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="description_en">Description (Anglais)</label>
+            <textarea id="description_en" name="description_en" rows="5" placeholder="Traduction automatique ou manuelle...">{{ objet['description_en'] or '' }}</textarea>
         </div>
 
         <div class="form-group">
@@ -276,10 +290,10 @@
         const labelFabricant = document.querySelector('label[for="fabricant"]');
         const labelAnnee = document.querySelector('label[for="date_fabrication"]');
 
-        if (categorie === 'Livres') {
-            labelNom.textContent = "Titre *";
+        if (categorie === 'Livres' || categorie === 'Logiciels') {
+            labelNom.textContent = categorie === 'Livres' ? "Titre *" : "Nom du logiciel *";
             labelFabricant.textContent = "Éditeur";
-            labelAnnee.textContent = "Année d'édition";
+            labelAnnee.textContent = categorie === 'Livres' ? "Année d'édition" : "Année de sortie / copyright";
         } else {
             labelNom.textContent = "Nom (ou titre) *";
             labelFabricant.textContent = "Fabricant (ou éditeur)";
@@ -422,6 +436,52 @@
             toggleAutreCategorie();
             chargerAttributsSpecifiques();
         });
+
+        // Gestion de la traduction automatique
+        const btnTranslate = document.getElementById('btn-translate');
+        if (btnTranslate) {
+            btnTranslate.addEventListener('click', async function() {
+                const textToTranslate = document.getElementById('description').value.trim();
+                const targetArea = document.getElementById('description_en');
+                
+                if (!textToTranslate) {
+                    alert("Veuillez saisir une description en français avant de traduire.");
+                    return;
+                }
+                
+                // État de chargement
+                const originalContent = btnTranslate.innerHTML;
+                btnTranslate.disabled = true;
+                btnTranslate.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Traduction...';
+                
+                try {
+                    const response = await fetch('/admin/translate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+                        },
+                        body: JSON.stringify({ text: textToTranslate })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.translated_text) {
+                        targetArea.value = result.translated_text;
+                        targetArea.classList.add('translation-success');
+                        setTimeout(() => targetArea.classList.remove('translation-success'), 2000);
+                    } else {
+                        alert("Erreur de traduction : " + (result.error || "Inconnue"));
+                    }
+                } catch (error) {
+                    console.error("Erreur translation:", error);
+                    alert("Une erreur est survenue lors de la communication avec le service de traduction.");
+                } finally {
+                    btnTranslate.disabled = false;
+                    btnTranslate.innerHTML = originalContent;
+                }
+            });
+        }
 
         form.addEventListener('submit', function(e) {
             if (categorieSelect.value === 'Autre') {

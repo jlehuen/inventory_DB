@@ -1,7 +1,7 @@
 {# templates/detail.html - Fiche détaillée d'un objet (public) #}
 {% extends 'base.html' %}
 
-{% block title %}{{ objet['nom'] }} - Catalogue d'Instruments{% endblock %}
+{% block title %}Musée Martial Vivet - {{ objet['nom'] }}{% endblock %}
 
 {% block main_class %}wide-container{% endblock %}
 
@@ -9,7 +9,7 @@
 <section class="objet-detail">
     <div class="view-header">
         <div class="header-main-info">
-            <h1>{{ objet['nom'] }}</h1>
+            <h1>{{ objet['nom']|replace('\\n', '\n') }}</h1>
             <p class="objet-categorie">Catégorie: <a href="{{ url_for('objets_par_categorie', categorie=objet['categorie']) }}">{{ objet['categorie'] }}</a></p>
         </div>
         <div class="view-actions">
@@ -19,11 +19,11 @@
             {% else %}
                 <a href="{{ url_for('objets_par_categorie', categorie=objet['categorie']) }}" class="btn"><i class="fas fa-arrow-left"></i> Retour à la catégorie</a>
             {% endif %}
-            <a href="{{ url_for('generate_pdf', id=objet['id']) }}" class="btn primary" target="_blank">
+            <a href="{{ url_for('generate_pdf', id=objet['id'], lang='fr') }}" class="btn primary" target="_blank" id="btn-pdf-gen">
                 <i class="fas fa-file-pdf"></i> GÉNÉRER UN PDF
             </a>
             {% if current_user.is_authenticated %}
-            <a href="{{ url_for('generate_cartel', id=objet['id']) }}" class="btn primary" target="_blank">
+            <a href="{{ url_for('generate_cartel', id=objet['id'], lang='fr') }}" class="btn primary" target="_blank" id="btn-cartel-gen">
                 <i class="fas fa-tag"></i> GÉNÉRER UN CARTEL
             </a>
             {% endif %}
@@ -35,7 +35,7 @@
             <!-- Galerie d'images avec image principale et images supplémentaires -->
             <div class="image-principale-container">
                 {% if objet['image_principale'] %}
-                <img id="image-principale" src="{{ url_for('static', filename=objet['image_principale']) }}" alt="{{ objet['nom'] }}">
+                <img id="image-principale" src="{{ url_for('static', filename=objet['image_principale']) }}" alt="{{ objet['nom']|replace('\\n', '\n') }}">
                 {% else %}
                 <div class="default-image large"></div>
                 {% endif %}
@@ -61,11 +61,28 @@
         <div class="objet-detail-info">
             <!-- Section Description - Toujours affichée -->
             <div class="info-section">
-                <h2>Description</h2>
-                {% if objet['description'] and objet['description'].strip() %}
-                    <p>{{ objet['description'] }}</p>
-                {% else %}
-                    <p><em>Aucune description disponible pour cet objet.</em></p>
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <h2>Description</h2>
+                    {% if objet['description_en'] and objet['description_en'].strip() %}
+                    <div class="lang-toggle" style="margin-bottom: 10px;">
+                        <button class="btn-small active" id="lang-fr" onclick="switchLang('fr')">FR</button>
+                        <button class="btn-small" id="lang-en" onclick="switchLang('en')">EN</button>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div id="desc-fr">
+                    {% if objet['description'] and objet['description'].strip() %}
+                        <p class="pre-line">{{ objet['description']|replace('\\n', '\n') }}</p>
+                    {% else %}
+                        <p><em>Aucune description disponible pour cet objet.</em></p>
+                    {% endif %}
+                </div>
+
+                {% if objet['description_en'] and objet['description_en'].strip() %}
+                <div id="desc-en" style="display: none;">
+                    <p class="pre-line">{{ objet['description_en']|replace('\\n', '\n') }}</p>
+                </div>
                 {% endif %}
             </div>
 
@@ -73,16 +90,16 @@
                 <h2>Données générales</h2>
                 <table class="info-table">
                     <tr>
-                        <th>{% if objet['categorie'] == 'Livres' %}Titre{% else %}Modèle{% endif %} :</th>
-                        <td>{{ objet['nom'] }}</td>
+                        <th>{% if objet['categorie'] in ['Livres', 'Logiciels'] %}Titre{% else %}Modèle{% endif %} :</th>
+                        <td class="pre-line">{{ (objet['nom'] or '-')|replace('\\n', '\n') }}</td>
                     </tr>
                     <tr>
-                        <th>{% if objet['categorie'] == 'Livres' %}Éditeur{% else %}Fabricant{% endif %} :</th>
-                        <td>{{ objet['fabricant'] or '-' }}</td>
+                        <th>{% if objet['categorie'] in ['Livres', 'Logiciels'] %}Éditeur{% else %}Fabricant{% endif %} :</th>
+                        <td class="pre-line">{{ (objet['fabricant'] or '-')|replace('\\n', '\n') }}</td>
                     </tr>
                     <tr>
-                        <th>{% if objet['categorie'] == 'Livres' %}Année d'édition{% else %}Année de sortie{% endif %} :</th>
-                        <td>{{ objet['date_fabrication'] or '-' }}</td>
+                        <th>{% if objet['categorie'] in ['Livres', 'Logiciels'] %}Année d'édition{% else %}Année de sortie{% endif %} :</th>
+                        <td class="pre-line">{{ (objet['date_fabrication'] or '-')|replace('\\n', '\n') }}</td>
                     </tr>
                     <tr>
                         <th>Liens web :</th>
@@ -105,13 +122,13 @@
                     </tr>
                     <tr>
                         <th>État de l'objet :</th>
-                        <td>{{ objet['etat'] or '-' }}</td>
+                        <td class="pre-line">{{ (objet['etat'] or '-')|replace('\\n', '\n') }}</td>
                     </tr>
 
                     {% if current_user.is_authenticated %}
                     <tr class="admin-only-row" style="background-color: #fdf2e9;">
                         <th>Donateur :</th>
-                        <td>{{ objet['origine'] or '-' }} <em style="font-size: 0.8em; color: #666;">(visible uniquement par admin)</em></td>
+                        <td class="pre-line">{{ (objet['origine'] or '-')|replace('\\n', '\n') }} <em style="font-size: 0.8em; color: #666;">(visible uniquement par admin)</em></td>
                     </tr>
                     {% endif %}
 
@@ -134,7 +151,7 @@
 
             {% if objet['attributs_specifiques'] %}
             <div class="info-section">
-                <h2>{% if objet['categorie'] == 'Livres' %}Informations bibliographiques{% else %}Caractéristiques techniques{% endif %}</h2>
+                <h2>{% if objet['categorie'] in ['Livres', 'Logiciels'] %}Informations détaillées{% else %}Caractéristiques techniques{% endif %}</h2>
                 <table class="info-table">
                     {% set attrs = objet['attributs_specifiques']|from_json %}
                     {% set ordered_attrs = [] %}
@@ -155,7 +172,7 @@
                     {% for cle, valeur, _, label in ordered_attrs|sort(attribute='2') %}
                         <tr>
                             <th>{{ label }} :</th>
-                            <td>{{ valeur }}</td>
+                            <td class="pre-line">{{ (valeur|string)|replace('\\n', '\n') }}</td>
                         </tr>
                     {% endfor %}
                 </table>
@@ -166,7 +183,58 @@
     </div>
 </section>
 
+<style>
+.lang-toggle {
+    display: flex;
+    gap: 5px;
+}
+.lang-toggle .btn-small {
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    border: 1px solid #ccc;
+    background: #f8f9fa;
+    color: #888;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: bold;
+}
+.lang-toggle .btn-small.active {
+    background: #3498db;
+    color: white;
+    border-color: #2980b9;
+}
+</style>
+
 <script>
+function switchLang(lang) {
+    const descFr = document.getElementById('desc-fr');
+    const descEn = document.getElementById('desc-en');
+    const btnFr = document.getElementById('lang-fr');
+    const btnEn = document.getElementById('lang-en');
+    const btnPdf = document.getElementById('btn-pdf-gen');
+    const btnCartel = document.getElementById('btn-cartel-gen');
+
+    if (lang === 'fr') {
+        descFr.style.display = 'block';
+        if (descEn) descEn.style.display = 'none';
+        btnFr.classList.add('active');
+        if (btnEn) btnEn.classList.remove('active');
+        
+        // Mettre à jour les URLs des boutons PDF
+        if (btnPdf) btnPdf.href = btnPdf.href.replace('lang=en', 'lang=fr');
+        if (btnCartel) btnCartel.href = btnCartel.href.replace('lang=en', 'lang=fr');
+    } else {
+        descFr.style.display = 'none';
+        if (descEn) descEn.style.display = 'block';
+        btnFr.classList.remove('active');
+        if (btnEn) btnEn.classList.add('active');
+        
+        // Mettre à jour les URLs des boutons PDF
+        if (btnPdf) btnPdf.href = btnPdf.href.includes('lang=') ? btnPdf.href.replace('lang=fr', 'lang=en') : btnPdf.href + (btnPdf.href.includes('?') ? '&' : '?') + 'lang=en';
+        if (btnCartel) btnCartel.href = btnCartel.href.includes('lang=') ? btnCartel.href.replace('lang=fr', 'lang=en') : btnCartel.href + (btnCartel.href.includes('?') ? '&' : '?') + 'lang=en';
+    }
+}
+
 function changeMainImage(src, element) {
     document.getElementById('image-principale').src = src;
 

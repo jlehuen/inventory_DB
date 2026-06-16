@@ -1,0 +1,22 @@
+<div class="preview-card">
+    {% if image_url %}
+    <div class="preview-image" style="background-image: url('{{ image_url }}')"></div>
+    {% else %}
+    <div class="preview-image default-image"></div>
+    {% endif %}
+    <div class="preview-content">
+        <h4>{{ objet['nom']|replace('\\n', '\n') }}</h4>
+        <div class="preview-meta">
+            <span class="preview-cat"><i class="fas fa-tag"></i> {{ objet['categorie'] }}</span>
+            {% if objet['date_fabrication'] %}
+            <span class="preview-year"><i class="fas fa-calendar"></i> {{ objet['date_fabrication']|replace('\\n', '\n') }}</span>
+            {% endif %}
+        </div>
+        <p class="preview-desc">{{ description|replace('\\n', '\n') }}</p>
+        {% if objet['etat'] %}
+        <div class="preview-status">
+            <strong>État :</strong> {{ objet['etat']|replace('\\n', '\n') }}
+        </div>
+        {% endif %}
+    </div>
+</div>

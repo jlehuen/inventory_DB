@@ -36,6 +36,11 @@
                 "description": "Décrit les calculatrices Hewlett-Packard commercialisées entre 1968 et 1986.",
                 "nom": "Museum of HP Calculators",
                 "url": "https://www.hpmuseum.org/"
+            },
+            {
+                "description": "La revue Micro-Systèmes de sept. 1983 : un guide d'achat de 400 pages !",
+                "nom": "Micro-Systèmes n°34",
+                "url": "https://archive.org/details/Micro_Systemes_-_Issue_034_1983-09_SPE_FR/mode/2up"
             }
         ]
     },
@@ -71,6 +76,11 @@
                 "description": "",
                 "nom": "Minitel 1 (1980)",
                 "url": "https://www.minipavi.fr/emulminitel/index.php"
+            },
+            {
+                "nom": "MS DOS 1.0 (1981)",
+                "url": "https://www.pcjs.org/machines/pcx86/ibm/5150/mda/",
+                "description": ""
             },
             {
                 "description": "",

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accès réservé - Musée Martial Vivet</title>
+    <style>
+        :root {
+            --primary-color: #004a99;
+            --text-color: #333;
+            --bg-color: #f4f7f9;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 500px;
+            text-align: center;
+            border-top: 5px solid var(--primary-color);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        p {
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .link-container {
+            background: #eef5ff;
+            padding: 1rem;
+            border-radius: 8px;
+            word-break: break-all;
+        }
+
+        a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        a:hover {
+            text-decoration: underline;
+            opacity: 0.8;
+        }
+
+        .footer {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Accès Temporaire</h1>
+        <p>Le site du <strong>Musée Martial Vivet</strong> est temporairement réservé aux usagers de l'intranet de l'Université du Mans.</p>
+        
+        <div class="link-container">
+            Pour y accéder depuis l'intranet, cliquez sur :<br>
+            <a href="http://musee-ic2-demo.univ-lemans.fr/">http://musee-ic2-demo.univ-lemans.fr/</a>
+        </div>
+
+        <div class="footer">
+            Université du Mans
+        </div>
+    </div>
+</body>
+</html>

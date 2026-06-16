@@ -11,6 +11,7 @@ CREATE TABLE objets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nom TEXT NOT NULL,
     description TEXT,
+    description_en TEXT,
     categorie TEXT,
     fabricant TEXT,
     date_fabrication TEXT,

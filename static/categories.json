@@ -1,6 +1,6 @@
 {
   "Ordinateurs": {
-    "icon": "fa-laptop",
+    "icon": "fa-desktop",
     "description": "Cette catégorie regroupe des ordinateurs personnels, des stations de travail et des systèmes portables. La collection couvre la période depuis les pionniers de la micro-informatique (années 1970) jusqu'au début des années 2000, illustrant divers aspects de l'histoire des micro-ordinateurs.",
     "attributes": [
       {
@@ -66,7 +66,7 @@
     ]
   },
   "Périphériques": {
-    "icon": "fa-keyboard",
+    "icon": "fa-print",
     "description": "Regroupe des dispositifs d'entrée/sortie, de communication et d'extension connectés aux ordinateurs. La collection comprend des claviers, souris, imprimantes, modems, ainsi que des manettes de jeu et d'autres interfaces spécialisées.",
     "attributes": [
       {
@@ -96,7 +96,7 @@
     ]
   },
   "Stockages": {
-    "icon": "fa-floppy-disk",
+    "icon": "fa-tape",
     "description": "Cette partie présente l'évolution des supports de stockage de données. Elle comprend des exemples de technologies variées, telles que les cartes perforées, les bandes magnétiques, les disquettes, les disques optiques, jusqu'aux dispositifs de stockage modernes.",
     "attributes": [
       {
@@ -146,6 +146,42 @@
         "label": "ISBN",
         "type": "text",
         "ordre": 4
+      }
+    ]
+  },
+  "Logiciels": {
+    "icon": "fa-floppy-disk",
+    "description": "Cette catégorie regroupe les systèmes d'exploitation, logiciels d'application (bureautique, utilitaires) et jeux vidéo. Elle témoigne de l'évolution logicielle et des supports numériques.",
+    "attributes": [
+      {
+        "id": "type_logiciel",
+        "label": "Type (OS, Progiciel, Jeu, etc.)",
+        "type": "text",
+        "ordre": 1
+      },
+      {
+        "id": "version",
+        "label": "Version",
+        "type": "text",
+        "ordre": 2
+      },
+      {
+        "id": "plateforme",
+        "label": "Plateforme / OS requis",
+        "type": "text",
+        "ordre": 3
+      },
+      {
+        "id": "support",
+        "label": "Support physique",
+        "type": "text",
+        "ordre": 4
+      },
+      {
+        "id": "licence",
+        "label": "Type de licence",
+        "type": "text",
+        "ordre": 5
       }
     ]
   },
