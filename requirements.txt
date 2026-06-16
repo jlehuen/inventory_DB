@@ -16,3 +16,4 @@ pytest
 pytest-flask
 qrcode
 requests
+deep-translator
